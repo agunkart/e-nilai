@@ -3,11 +3,13 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Aplikasi Input Nilai Siswa - Multi Halaman</title>
+    <title>Aplikasi E-Nilai (Mobile-Friendly)</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Library untuk membaca file Excel -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    <!-- Library untuk membuat PDF -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.23/jspdf.plugin.autotable.min.js"></script>
     <style>
@@ -21,9 +23,6 @@
         .table-container::-webkit-scrollbar-thumb:hover { background: #555; }
         .page { display: none; }
         .page.active { display: block; }
-        .nav-link { transition: background-color 0.3s, color 0.3s; }
-        .nav-link.active { background-color: #1d4ed8; color: white; }
-        input[type="file"] { display: none; }
         .modal { display: none; }
         .modal.active { display: flex; }
         .nilai-merah { color: #dc2626; font-weight: bold; }
@@ -37,11 +36,23 @@
             color: #3b82f6;
             font-weight: 600;
         }
+        
+        /* --- Mobile-First Styles --- */
+        .desktop-nav { display: none; }
+        .mobile-header, .mobile-bottom-nav { display: flex; }
+        .mobile-menu { display: none; }
+        .mobile-menu.open { display: block; }
+
+        @media (min-width: 768px) {
+            .desktop-nav { display: flex; }
+            .mobile-header, .mobile-bottom-nav { display: none; }
+        }
     </style>
 </head>
 <body class="bg-gray-100 text-gray-800">
 
-    <div id="login-container" class="flex items-center justify-center h-screen bg-gray-200">
+    <!-- Halaman Login -->
+    <div id="login-container" class="flex items-center justify-center h-screen bg-gray-200 p-4">
         <div class="w-full max-w-md bg-white p-8 rounded-xl shadow-lg">
             <div class="text-center mb-8">
                 <i class="fas fa-book-reader text-5xl text-blue-600"></i>
@@ -71,9 +82,11 @@
         </div>
     </div>
 
+    <!-- Kontainer Aplikasi Utama -->
     <div id="app-container" class="hidden">
         <div class="flex h-screen bg-gray-200">
-            <aside class="w-64 bg-gray-800 text-white flex-shrink-0 flex flex-col">
+            <!-- Sidebar Navigasi (Desktop) -->
+            <aside class="desktop-nav w-64 bg-gray-800 text-white flex-shrink-0 flex-col">
                 <div class="p-6 text-2xl font-bold border-b border-gray-700">
                     <i class="fas fa-book-reader mr-2"></i> E-Nilai
                 </div>
@@ -104,62 +117,79 @@
                 </div>
             </aside>
 
+            <!-- Konten Utama -->
             <main class="flex-1 flex flex-col overflow-hidden">
-                <div class="flex-1 overflow-x-hidden overflow-y-auto bg-gray-100 p-4 sm:p-6 lg:p-8">
+                <!-- Header (Mobile) -->
+                <header class="mobile-header bg-white shadow-md p-4 justify-between items-center relative">
+                    <h1 id="page-title" class="text-xl font-bold text-gray-800">Data Sekolah</h1>
+                    <button id="mobile-menu-btn" class="text-gray-600 text-2xl">
+                        <i class="fas fa-bars"></i>
+                    </button>
+                    <!-- Mobile Menu Dropdown -->
+                    <div id="mobile-menu-dropdown" class="mobile-menu absolute top-full right-4 mt-2 w-48 bg-white rounded-md shadow-lg z-20">
+                        <a href="#" class="nav-link block px-4 py-2 text-gray-700 hover:bg-gray-100" data-page="pengaturan"><i class="fas fa-user-cog w-6 mr-2"></i>Pengaturan</a>
+                        <a href="https://chat.whatsapp.com/LvzbnBgTffKCGUIStyayh5" target="_blank" class="block px-4 py-2 text-gray-700 hover:bg-gray-100"><i class="fab fa-whatsapp w-6 mr-2 text-green-500"></i>Grup WA</a>
+                        <div class="border-t my-1"></div>
+                        <a href="#" id="logout-btn-mobile" class="block px-4 py-2 text-red-600 hover:bg-gray-100"><i class="fas fa-sign-out-alt w-6 mr-2"></i>Keluar</a>
+                    </div>
+                </header>
+                
+                <!-- Area Konten dengan Padding (untuk menghindari overlap dengan nav bawah) -->
+                <div class="flex-1 overflow-x-hidden overflow-y-auto bg-gray-100 p-4 pb-24">
                     
+                    <!-- Halaman 1: Data Sekolah -->
                     <div id="page-data-sekolah" class="page">
-                        <h1 class="text-3xl font-bold text-gray-900 mb-6">Data Sekolah & Guru</h1>
-                        <div class="space-y-8">
-                            <div class="bg-white p-8 rounded-xl shadow-md">
-                                <h2 class="text-xl font-semibold text-gray-800 mb-6 border-b pb-4">Informasi Institusi</h2>
-                                <div class="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-6">
-                                    <div class="md:col-span-2">
-                                        <label class="block text-sm font-medium text-gray-700 mb-1"><i class="fas fa-school mr-2 text-gray-400"></i>Nama Sekolah</label>
+                        <div class="space-y-6">
+                            <div class="bg-white p-6 rounded-xl shadow-md">
+                                <h2 class="text-xl font-semibold text-gray-800 mb-4 border-b pb-3">Informasi Institusi</h2>
+                                <div class="space-y-4">
+                                    <div>
+                                        <label class="block text-sm font-medium text-gray-700 mb-1">Nama Sekolah</label>
                                         <input type="text" id="school-name" class="block w-full rounded-md border-gray-300 shadow-sm p-2">
                                     </div>
-                                    <div class="md:col-span-2">
-                                        <label class="block text-sm font-medium text-gray-700 mb-1"><i class="fas fa-map-marker-alt mr-2 text-gray-400"></i>Alamat Sekolah</label>
+                                    <div>
+                                        <label class="block text-sm font-medium text-gray-700 mb-1">Alamat Sekolah</label>
                                         <input type="text" id="school-address" class="block w-full rounded-md border-gray-300 shadow-sm p-2">
                                     </div>
                                     <div>
-                                        <label class="block text-sm font-medium text-gray-700 mb-1"><i class="fas fa-calendar-alt mr-2 text-gray-400"></i>Tahun Ajaran</label>
+                                        <label class="block text-sm font-medium text-gray-700 mb-1">Tahun Ajaran</label>
                                         <input type="text" id="tahun-ajaran" placeholder="Contoh: 2024/2025" class="block w-full rounded-md border-gray-300 shadow-sm p-2">
                                     </div>
                                 </div>
                             </div>
-                            <div class="bg-white p-8 rounded-xl shadow-md">
-                                <h2 class="text-xl font-semibold text-gray-800 mb-6 border-b pb-4">Penanggung Jawab</h2>
-                                <div class="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-6">
+                            <div class="bg-white p-6 rounded-xl shadow-md">
+                                <h2 class="text-xl font-semibold text-gray-800 mb-4 border-b pb-3">Penanggung Jawab</h2>
+                                <div class="space-y-4">
                                     <div>
-                                        <label class="block text-sm font-medium text-gray-700 mb-1"><i class="fas fa-user-tie mr-2 text-gray-400"></i>Nama Kepala Sekolah</label>
+                                        <label class="block text-sm font-medium text-gray-700 mb-1">Nama Kepala Sekolah</label>
                                         <input type="text" id="ks-name" class="block w-full rounded-md border-gray-300 shadow-sm p-2">
                                     </div>
                                     <div>
-                                        <label class="block text-sm font-medium text-gray-700 mb-1"><i class="fas fa-id-card mr-2 text-gray-400"></i>NIP Kepala Sekolah</label>
+                                        <label class="block text-sm font-medium text-gray-700 mb-1">NIP Kepala Sekolah</label>
                                         <input type="text" id="ks-nip" class="block w-full rounded-md border-gray-300 shadow-sm p-2">
                                     </div>
                                     <div>
-                                        <label class="block text-sm font-medium text-gray-700 mb-1"><i class="fas fa-chalkboard-teacher mr-2 text-gray-400"></i>Nama Guru</label>
+                                        <label class="block text-sm font-medium text-gray-700 mb-1">Nama Guru</label>
                                         <input type="text" id="teacher-name" class="block w-full rounded-md border-gray-300 shadow-sm p-2">
                                     </div>
                                     <div>
-                                        <label class="block text-sm font-medium text-gray-700 mb-1"><i class="fas fa-id-card mr-2 text-gray-400"></i>NIP Guru</label>
+                                        <label class="block text-sm font-medium text-gray-700 mb-1">NIP Guru</label>
                                         <input type="text" id="teacher-nip" class="block w-full rounded-md border-gray-300 shadow-sm p-2">
                                     </div>
                                 </div>
                             </div>
-                            <div class="mt-4 text-right">
-                                 <button id="save-school-data" class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-6 rounded-lg transition duration-300">
+                            <div class="mt-4">
+                                 <button id="save-school-data" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-6 rounded-lg transition duration-300">
                                     <i class="fas fa-save mr-2"></i>Simpan Data
                                  </button>
                             </div>
                         </div>
                     </div>
 
+                    <!-- Halaman 2: Data Siswa -->
                     <div id="page-data-siswa" class="page">
-                        <h1 class="text-3xl font-bold text-gray-900 mb-6">Manajemen Data Siswa</h1>
-                        <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                            <div class="lg:col-span-1 bg-white p-6 rounded-xl shadow-md flex flex-col">
+                        <div class="space-y-6">
+                            <div class="bg-white p-6 rounded-xl shadow-md flex flex-col">
                                 <h3 class="text-lg font-semibold mb-4">Tambah Siswa</h3>
                                 <div class="space-y-3 mb-4">
                                     <div>
@@ -181,18 +211,18 @@
                                             <label class="inline-flex items-center"><input type="radio" name="new-student-gender" value="P" class="form-radio"> <span class="ml-2">Perempuan</span></label>
                                         </div>
                                     </div>
-                                    <button id="add-student-btn" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded-lg !mt-4">Tambah</button>
+                                    <button id="add-student-btn" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-4 rounded-lg !mt-4">Tambah Siswa</button>
                                 </div>
                                 <div class="border-t pt-4 mt-4">
                                     <label class="block text-sm font-medium text-gray-700 mb-1">Unggah dari File</label>
                                     <input type="file" id="upload-excel" accept=".xlsx, .xls">
-                                    <label for="upload-excel" class="w-full cursor-pointer bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-4 rounded-lg flex items-center justify-center">
+                                    <label for="upload-excel" class="w-full cursor-pointer bg-green-600 hover:bg-green-700 text-white font-bold py-3 px-4 rounded-lg flex items-center justify-center">
                                         <i class="fas fa-file-excel mr-2"></i> Pilih File .xlsx
                                     </label>
                                     <p class="text-xs text-gray-500 mt-2">Format: Kolom A: NIS, B: Nama, C: Kelas, D: Jenis Kelamin (L/P).</p>
                                 </div>
                             </div>
-                            <div class="lg:col-span-2 bg-white p-6 rounded-xl shadow-md">
+                            <div class="bg-white p-4 md:p-6 rounded-xl shadow-md">
                                  <h3 class="text-lg font-semibold mb-4">Daftar Siswa</h3>
                                  <div class="table-container overflow-x-auto">
                                     <table id="student-list-table" class="w-full text-sm text-left text-gray-700"></table>
@@ -201,27 +231,27 @@
                         </div>
                     </div>
 
+                    <!-- Halaman 3: Olah Nilai -->
                     <div id="page-olah-nilai" class="page">
-                        <h1 class="text-3xl font-bold text-gray-900 mb-6">Olah Nilai Siswa</h1>
-                        <div class="flex border-b mb-6">
-                            <div class="semester-tab" data-semester="semester1">Semester 1</div>
-                            <div class="semester-tab" data-semester="semester2">Semester 2</div>
+                         <div class="flex border-b mb-4">
+                            <div class="semester-tab flex-1 text-center" data-semester="semester1">Semester 1</div>
+                            <div class="semester-tab flex-1 text-center" data-semester="semester2">Semester 2</div>
                         </div>
-                        <div class="bg-white p-6 rounded-xl shadow-md mb-6">
-                            <div class="flex flex-wrap justify-between items-center gap-4">
-                                <div class="flex items-center gap-4">
-                                    <div>
-                                        <label for="subject-selector" class="block text-sm font-medium text-gray-700 mb-2">Pilih Mata Pelajaran:</label>
-                                        <select id="subject-selector" class="w-full md:w-auto bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg p-2.5"></select>
-                                    </div>
-                                    <div>
-                                        <label for="kkm-input" class="block text-sm font-medium text-gray-700 mb-2">KKM:</label>
-                                        <input type="number" id="kkm-input" class="w-24 bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg p-2.5">
-                                    </div>
+                        <div class="bg-white p-4 rounded-xl shadow-md mb-6">
+                            <div class="flex flex-col md:flex-row justify-between items-center gap-4">
+                                <div class="w-full md:w-auto flex-grow">
+                                    <label for="subject-selector" class="block text-sm font-medium text-gray-700 mb-1">Mata Pelajaran:</label>
+                                    <select id="subject-selector" class="w-full bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg p-2.5"></select>
                                 </div>
-                                <button id="edit-subjects-btn" class="bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-2 px-4 rounded-lg">
-                                    <i class="fas fa-cog mr-2"></i> Kelola Mapel
-                                </button>
+                                <div class="w-full md:w-auto flex gap-2">
+                                    <div class="flex-grow">
+                                        <label for="kkm-input" class="block text-sm font-medium text-gray-700 mb-1">KKM:</label>
+                                        <input type="number" id="kkm-input" class="w-full bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg p-2.5">
+                                    </div>
+                                    <button id="edit-subjects-btn" class="self-end bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-2.5 px-4 rounded-lg">
+                                        <i class="fas fa-cog"></i>
+                                    </button>
+                                </div>
                             </div>
                         </div>
                         <div class="bg-white rounded-xl shadow-md overflow-hidden">
@@ -231,15 +261,11 @@
                                     <tbody class="bg-white"></tbody>
                                 </table>
                             </div>
-                            <div class="p-4 bg-gray-50 border-t flex flex-wrap gap-4 justify-center">
-                                <div class="flex gap-2">
-                                    <button id="add-formative-btn" class="bg-blue-500 hover:bg-blue-600 text-white font-semibold py-2 px-4 rounded-lg text-xs">+ Tambah Kolom AF</button>
-                                    <button id="delete-formative-btn" class="bg-red-500 hover:bg-red-600 text-white font-semibold py-2 px-4 rounded-lg text-xs">- Hapus Kolom AF</button>
-                                </div>
-                                <div class="flex gap-2">
-                                    <button id="add-summative-btn" class="bg-yellow-500 hover:bg-yellow-600 text-white font-semibold py-2 px-4 rounded-lg text-xs">+ Tambah Kolom PH</button>
-                                    <button id="delete-summative-btn" class="bg-red-500 hover:bg-red-600 text-white font-semibold py-2 px-4 rounded-lg text-xs">- Hapus Kolom PH</button>
-                                </div>
+                            <div class="p-4 bg-gray-50 border-t grid grid-cols-2 gap-2">
+                                <button id="add-formative-btn" class="bg-blue-500 hover:bg-blue-600 text-white font-semibold py-2 px-3 rounded-lg text-xs">+ AF</button>
+                                <button id="delete-formative-btn" class="bg-red-500 hover:bg-red-600 text-white font-semibold py-2 px-3 rounded-lg text-xs">- AF</button>
+                                <button id="add-summative-btn" class="bg-yellow-500 hover:bg-yellow-600 text-white font-semibold py-2 px-3 rounded-lg text-xs">+ PH</button>
+                                <button id="delete-summative-btn" class="bg-red-500 hover:bg-red-600 text-white font-semibold py-2 px-3 rounded-lg text-xs">- PH</button>
                             </div>
                              <div class="p-2 text-center bg-gray-50 text-xs text-gray-600 border-t">
                                 Keterangan: <strong>AF</strong> = Asesmen Formatif, <strong>PH</strong> = Penilaian Harian
@@ -247,35 +273,31 @@
                         </div>
                     </div>
 
+                    <!-- Halaman 4: Rekap Nilai -->
                     <div id="page-rekap-nilai" class="page">
-                        <div class="flex justify-between items-start mb-6">
-                            <h1 class="text-3xl font-bold text-gray-900">Rekapitulasi Nilai Akhir</h1>
-                            <div class="flex gap-2">
-                                <button id="preview-pdf-btn" class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded-lg">
-                                    <i class="fas fa-eye mr-2"></i> Pratinjau PDF
-                                </button>
-                                <button id="download-pdf-btn" class="bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-4 rounded-lg">
-                                    <i class="fas fa-download mr-2"></i> Unduh PDF
-                                </button>
-                                <button id="download-excel-btn" class="bg-teal-600 hover:bg-teal-700 text-white font-bold py-2 px-4 rounded-lg">
-                                    <i class="fas fa-file-excel mr-2"></i> Unduh XLSX
-                                </button>
+                        <div class="flex border-b mb-4">
+                            <div class="semester-tab flex-1 text-center" data-semester="semester1">Semester 1</div>
+                            <div class="semester-tab flex-1 text-center" data-semester="semester2">Semester 2</div>
+                        </div>
+                        <div class="bg-white p-4 rounded-xl shadow-sm mb-6 space-y-4">
+                            <div>
+                                <label for="lokasi-cetak" class="block text-sm font-medium text-gray-700">Lokasi Cetak</label>
+                                <input type="text" id="lokasi-cetak" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm p-2">
                             </div>
-                        </div>
-                         <div class="flex border-b mb-6">
-                            <div class="semester-tab" data-semester="semester1">Semester 1</div>
-                            <div class="semester-tab" data-semester="semester2">Semester 2</div>
-                        </div>
-                        <div class="bg-white p-4 rounded-xl shadow-sm mb-6">
-                            <div class="flex flex-wrap gap-4 items-end">
-                                 <div>
-                                    <label for="lokasi-cetak" class="block text-sm font-medium text-gray-700">Lokasi Cetak</label>
-                                    <input type="text" id="lokasi-cetak" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm p-2">
-                                </div>
-                                <div>
-                                    <label for="tanggal-cetak" class="block text-sm font-medium text-gray-700">Tanggal Cetak</label>
-                                    <input type="text" id="tanggal-cetak" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm p-2">
-                                </div>
+                            <div>
+                                <label for="tanggal-cetak" class="block text-sm font-medium text-gray-700">Tanggal Cetak</label>
+                                <input type="text" id="tanggal-cetak" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm p-2">
+                            </div>
+                             <div class="grid grid-cols-1 sm:grid-cols-3 gap-2">
+                                <button id="preview-pdf-btn" class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded-lg text-sm">
+                                    <i class="fas fa-eye mr-2"></i> Pratinjau
+                                </button>
+                                <button id="download-pdf-btn" class="bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-4 rounded-lg text-sm">
+                                    <i class="fas fa-download mr-2"></i> PDF
+                                </button>
+                                <button id="download-excel-btn" class="bg-teal-600 hover:bg-teal-700 text-white font-bold py-2 px-4 rounded-lg text-sm">
+                                    <i class="fas fa-file-excel mr-2"></i> XLSX
+                                </button>
                             </div>
                         </div>
                         <div class="bg-white rounded-xl shadow-md overflow-hidden">
@@ -285,10 +307,10 @@
                         </div>
                     </div>
 
+                    <!-- Halaman 5: Pengaturan -->
                     <div id="page-pengaturan" class="page">
-                        <h1 class="text-3xl font-bold text-gray-900 mb-6">Pengaturan Akun</h1>
-                        <div class="bg-white p-8 rounded-xl shadow-md max-w-lg mx-auto">
-                            <h2 class="text-xl font-semibold text-gray-800 mb-6 border-b pb-4">Ubah Username & Password</h2>
+                        <div class="bg-white p-6 rounded-xl shadow-md max-w-lg mx-auto">
+                            <h2 class="text-xl font-semibold text-gray-800 mb-4 border-b pb-3">Ubah Akun</h2>
                             <div class="space-y-4">
                                 <div>
                                     <label for="current-password" class="block text-sm font-medium text-gray-700">Password Saat Ini</label>
@@ -303,18 +325,39 @@
                                     <input type="password" id="new-password" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm p-2">
                                 </div>
                                 <p id="settings-message" class="text-sm text-center"></p>
-                                <button id="save-settings-btn" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded-lg transition duration-300">Simpan Perubahan</button>
+                                <button id="save-settings-btn" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-4 rounded-lg transition duration-300">Simpan Perubahan</button>
                             </div>
                         </div>
                     </div>
 
                 </div>
+                
+                <!-- Navigasi Bawah (Mobile) -->
+                <nav class="mobile-bottom-nav fixed bottom-0 left-0 right-0 bg-white shadow-[0_-2px_5px_rgba(0,0,0,0.1)] justify-around z-10">
+                    <a href="#" class="nav-link flex-1 flex flex-col items-center justify-center p-2 text-gray-600" data-page="data-sekolah">
+                        <i class="fas fa-school text-xl"></i>
+                        <span class="text-xs mt-1">Sekolah</span>
+                    </a>
+                    <a href="#" class="nav-link flex-1 flex flex-col items-center justify-center p-2 text-gray-600" data-page="data-siswa">
+                        <i class="fas fa-users text-xl"></i>
+                        <span class="text-xs mt-1">Siswa</span>
+                    </a>
+                    <a href="#" class="nav-link flex-1 flex flex-col items-center justify-center p-2 text-gray-600" data-page="olah-nilai">
+                        <i class="fas fa-edit text-xl"></i>
+                        <span class="text-xs mt-1">Nilai</span>
+                    </a>
+                    <a href="#" class="nav-link flex-1 flex flex-col items-center justify-center p-2 text-gray-600" data-page="rekap-nilai">
+                        <i class="fas fa-chart-bar text-xl"></i>
+                        <span class="text-xs mt-1">Rekap</span>
+                    </a>
+                </nav>
             </main>
         </div>
     </div>
 
-    <div id="delete-modal" class="modal fixed inset-0 bg-black bg-opacity-50 items-center justify-center z-50">
-        <div class="bg-white p-8 rounded-lg shadow-xl w-full max-w-sm">
+    <!-- Semua Modal -->
+    <div id="delete-modal" class="modal fixed inset-0 bg-black bg-opacity-50 items-center justify-center z-50 p-4">
+        <div class="bg-white p-6 rounded-lg shadow-xl w-full max-w-sm">
             <h3 class="text-lg font-bold text-gray-900">Konfirmasi Hapus</h3>
             <p class="my-4 text-gray-700">Apakah Anda yakin ingin menghapus siswa <strong id="delete-student-name" class="text-red-600"></strong>?</p>
             <div class="flex justify-end gap-4 mt-6">
@@ -323,9 +366,8 @@
             </div>
         </div>
     </div>
-
-    <div id="edit-modal" class="modal fixed inset-0 bg-black bg-opacity-50 items-center justify-center z-50">
-        <div class="bg-white p-8 rounded-lg shadow-xl w-full max-w-md">
+    <div id="edit-modal" class="modal fixed inset-0 bg-black bg-opacity-50 items-center justify-center z-50 p-4">
+        <div class="bg-white p-6 rounded-lg shadow-xl w-full max-w-md">
             <h3 class="text-lg font-bold text-gray-900">Edit Data Siswa</h3>
             <div class="my-4 space-y-3">
                 <div>
@@ -334,11 +376,11 @@
                 </div>
                 <div>
                     <label for="edit-student-name" class="block text-sm font-medium text-gray-700">Nama Baru</label>
-                    <input type="text" id="edit-student-name" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm p-2 focus:border-indigo-500 focus:ring-indigo-500">
+                    <input type="text" id="edit-student-name" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm p-2">
                 </div>
                 <div>
                     <label for="edit-student-class" class="block text-sm font-medium text-gray-700">Kelas</label>
-                    <input type="text" id="edit-student-class" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm p-2 focus:border-indigo-500 focus:ring-indigo-500">
+                    <input type="text" id="edit-student-class" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm p-2">
                 </div>
                  <div>
                     <label class="block text-sm font-medium text-gray-700">Jenis Kelamin</label>
@@ -349,44 +391,41 @@
                 </div>
             </div>
             <div class="flex justify-end gap-4 mt-6">
-                <button id="cancel-edit-btn" class="px-4 py-2 rounded bg-gray-300 hover:bg-gray-400 transition-colors">Batal</button>
-                <button id="save-edit-btn" class="px-4 py-2 rounded bg-blue-600 text-white hover:bg-blue-700 transition-colors">Simpan</button>
+                <button id="cancel-edit-btn" class="px-4 py-2 rounded bg-gray-300 hover:bg-gray-400">Batal</button>
+                <button id="save-edit-btn" class="px-4 py-2 rounded bg-blue-600 text-white hover:bg-blue-700">Simpan</button>
             </div>
         </div>
     </div>
-    
-    <div id="subjects-modal" class="modal fixed inset-0 bg-black bg-opacity-50 items-center justify-center z-50">
-        <div class="bg-white p-8 rounded-lg shadow-xl w-full max-w-lg">
+    <div id="subjects-modal" class="modal fixed inset-0 bg-black bg-opacity-50 items-center justify-center z-50 p-4">
+        <div class="bg-white p-6 rounded-lg shadow-xl w-full max-w-lg">
             <h3 class="text-lg font-bold text-gray-900 mb-4">Kelola Mata Pelajaran</h3>
             <div class="max-h-64 overflow-y-auto border rounded-lg p-4">
-                <ul id="subjects-list" class="space-y-2">
-                    </ul>
+                <ul id="subjects-list" class="space-y-2"></ul>
             </div>
-            <div class="mt-6 border-t pt-6">
-                <h4 class="text-md font-semibold mb-2">Tambah Mata Pelajaran Baru</h4>
-                <div class="flex gap-2">
+            <div class="mt-4 border-t pt-4">
+                <h4 class="text-md font-semibold mb-2">Tambah Mapel Baru</h4>
+                <div class="flex flex-col sm:flex-row gap-2">
                     <input type="text" id="new-subject-name" placeholder="Nama mata pelajaran..." class="flex-grow block w-full rounded-md border-gray-300 shadow-sm p-2">
-                    <input type="number" id="new-subject-kkm" placeholder="KKM" class="w-24 block rounded-md border-gray-300 shadow-sm p-2">
+                    <input type="number" id="new-subject-kkm" placeholder="KKM" class="w-full sm:w-24 block rounded-md border-gray-300 shadow-sm p-2">
                     <button id="add-subject-btn" class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded-lg">Tambah</button>
                 </div>
             </div>
             <div class="text-right mt-6">
-                <button id="close-subjects-modal-btn" class="px-4 py-2 rounded bg-gray-300 hover:bg-gray-400 transition-colors">Tutup</button>
+                <button id="close-subjects-modal-btn" class="px-4 py-2 rounded bg-gray-300 hover:bg-gray-400">Tutup</button>
             </div>
         </div>
     </div>
-
-    <div id="edit-subject-modal" class="modal fixed inset-0 bg-black bg-opacity-50 items-center justify-center z-50">
-        <div class="bg-white p-8 rounded-lg shadow-xl w-full max-w-md">
+    <div id="edit-subject-modal" class="modal fixed inset-0 bg-black bg-opacity-50 items-center justify-center z-50 p-4">
+        <div class="bg-white p-6 rounded-lg shadow-xl w-full max-w-md">
             <h3 class="text-lg font-bold text-gray-900">Edit Mata Pelajaran</h3>
             <div class="my-4 space-y-3">
                  <div>
-                    <label for="edit-subject-input" class="block text-sm font-medium text-gray-700">Nama Baru Mata Pelajaran</label>
-                    <input type="text" id="edit-subject-input" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm p-2 focus:border-indigo-500 focus:ring-indigo-500">
+                    <label for="edit-subject-input" class="block text-sm font-medium text-gray-700">Nama Baru</label>
+                    <input type="text" id="edit-subject-input" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm p-2">
                 </div>
                  <div>
                     <label for="edit-subject-kkm" class="block text-sm font-medium text-gray-700">KKM</label>
-                    <input type="number" id="edit-subject-kkm" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm p-2 focus:border-indigo-500 focus:ring-indigo-500">
+                    <input type="number" id="edit-subject-kkm" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm p-2">
                 </div>
             </div>
             <div class="flex justify-end gap-4 mt-6">
@@ -395,11 +434,10 @@
             </div>
         </div>
     </div>
-    
-    <div id="delete-subject-modal" class="modal fixed inset-0 bg-black bg-opacity-50 items-center justify-center z-50">
-        <div class="bg-white p-8 rounded-lg shadow-xl w-full max-w-sm">
+    <div id="delete-subject-modal" class="modal fixed inset-0 bg-black bg-opacity-50 items-center justify-center z-50 p-4">
+        <div class="bg-white p-6 rounded-lg shadow-xl w-full max-w-sm">
             <h3 class="text-lg font-bold text-gray-900">Konfirmasi Hapus</h3>
-            <p class="my-4 text-gray-700">Yakin ingin menghapus mata pelajaran <strong id="delete-subject-name" class="text-red-600"></strong>? Semua data nilai terkait akan hilang.</p>
+            <p class="my-4 text-gray-700">Yakin ingin menghapus mata pelajaran <strong id="delete-subject-name" class="text-red-600"></strong>? Semua nilai terkait akan hilang.</p>
             <div class="flex justify-end gap-4 mt-6">
                 <button id="cancel-delete-subject-btn" class="px-4 py-2 rounded bg-gray-300 hover:bg-gray-400">Batal</button>
                 <button id="confirm-delete-subject-btn" class="px-4 py-2 rounded bg-red-600 text-white hover:bg-red-700">Hapus</button>
@@ -506,7 +544,7 @@
                     if (!state.credentials) {
                         state.credentials = { username: 'admin', password: '12345' };
                     }
-                    if (!state.grades.semester1 || !state.grades.semester2) {
+                    if (!state.grades || !state.grades.semester1 || !state.grades.semester2) {
                         initializeGrades();
                     }
                 } else {
@@ -533,7 +571,7 @@
                 });
 
                 const ppGrades = state.grades.semester1["Pendidikan Pancasila"];
-                if (ppGrades) {
+                if (ppGrades && ppGrades.length > 0) {
                     const budiGrade = ppGrades.find(g => g.nis === "1001");
                     if (budiGrade) Object.assign(budiGrade, { formative: [85, 90], summative: [80, 85], pts: 88, pas: 90 });
                     const citraGrade = ppGrades.find(g => g.nis === "1002");
@@ -544,12 +582,39 @@
             // --- NAVIGATION ---
             const navLinks = document.querySelectorAll('.nav-link');
             const pages = document.querySelectorAll('.page');
+            const pageTitle = document.getElementById('page-title');
+            const pageTitles = {
+                'data-sekolah': 'Data Sekolah',
+                'data-siswa': 'Manajemen Siswa',
+                'olah-nilai': 'Olah Nilai',
+                'rekap-nilai': 'Rekapitulasi Nilai',
+                'pengaturan': 'Pengaturan Akun'
+            };
+
             const navigate = (pageId) => {
+                // Close mobile menu if open
+                document.getElementById('mobile-menu-dropdown').classList.remove('open');
+
                 state.config.activePage = pageId;
                 pages.forEach(p => p.classList.remove('active'));
                 document.getElementById(`page-${pageId}`).classList.add('active');
-                navLinks.forEach(l => l.classList.remove('active'));
-                document.querySelector(`.nav-link[data-page="${pageId}"]`).classList.add('active');
+                
+                // Update active state for all nav links
+                navLinks.forEach(l => {
+                    const linkPage = l.dataset.page;
+                    if (linkPage === pageId) {
+                        l.classList.add('active', 'text-blue-600', 'bg-blue-50');
+                        l.classList.remove('text-gray-600');
+                    } else {
+                        l.classList.remove('active', 'text-blue-600', 'bg-blue-50');
+                        l.classList.add('text-gray-600');
+                    }
+                });
+
+                // Update mobile header title
+                pageTitle.textContent = pageTitles[pageId] || 'E-Nilai';
+                
+                // Run page-specific render functions
                 switch(pageId) {
                     case 'data-sekolah': renderDataSekolah(); break;
                     case 'data-siswa': renderDataSiswa(); break;
@@ -600,7 +665,7 @@
                             <td class="p-3">${student.name}</td>
                             <td class="p-3">${student.class}</td>
                             <td class="p-3">${student.gender}</td>
-                            <td class="p-3">
+                            <td class="p-3 text-center">
                                 <button class="edit-student-btn text-blue-500 hover:text-blue-700 mr-3" data-index="${index}"><i class="fas fa-pencil-alt"></i></button>
                                 <button class="delete-student-btn text-red-500 hover:text-red-700" data-index="${index}"><i class="fas fa-trash-alt"></i></button>
                             </td>
@@ -640,7 +705,7 @@
                 tbody.innerHTML = '';
 
                 if (data.length === 0) {
-                    tbody.innerHTML = `<tr><td colspan="100%" class="p-4 text-center text-gray-500">Tidak ada data siswa atau mata pelajaran.</td></tr>`;
+                    tbody.innerHTML = `<tr><td colspan="100%" class="p-4 text-center text-gray-500">Tidak ada data siswa atau mapel.</td></tr>`;
                     return;
                 }
                 
@@ -650,7 +715,7 @@
                 for (let i = 1; i <= maxFormative; i++) headers.push({text: `AF ${i}`, class: 'bg-blue-100'});
                 const maxSummative = Math.max(1, ...data.map(s => s.summative.length > 0 ? s.summative.length : 1));
                 for (let i = 1; i <= maxSummative; i++) headers.push({text: `PH ${i}`, class: 'bg-yellow-100'});
-                headers.push({text: 'PTS', class: 'bg-green-100'}, {text: 'PAS', class: 'bg-pink-100'}, {text: 'Nilai Akhir', class: 'bg-gray-200'});
+                headers.push({text: 'PTS', class: 'bg-green-100'}, {text: 'PAS', class: 'bg-pink-100'}, {text: 'NA', class: 'bg-gray-200'});
                 
                 headerRow.innerHTML = headers.map(h => `<th scope="col" class="p-3 ${h.class}">${h.text}</th>`).join('');
                 thead.appendChild(headerRow);
@@ -664,22 +729,13 @@
                     let cells = `<td class="p-3 font-medium">${index + 1}</td><td class="p-3">${student.name}</td>`;
                     for (let i = 0; i < maxFormative; i++) {
                         const score = student.formative[i] || 0;
-                        const formativeClass = score < kkm ? 'nilai-merah' : '';
-                        cells += `<td class="p-3 editable bg-blue-100 hover:bg-blue-200 ${formativeClass}" contenteditable="true" data-field="formative" data-sub-index="${i}">${student.formative[i] || ''}</td>`;
+                        cells += `<td class="p-3 editable bg-blue-50 hover:bg-blue-200" contenteditable="true" data-field="formative" data-sub-index="${i}">${student.formative[i] || ''}</td>`;
                     }
                     for (let i = 0; i < maxSummative; i++) {
-                        const score = student.summative[i] || 0;
-                        const summativeClass = score < kkm ? 'nilai-merah' : '';
-                        cells += `<td class="p-3 editable bg-yellow-100 hover:bg-yellow-200 ${summativeClass}" contenteditable="true" data-field="summative" data-sub-index="${i}">${student.summative[i] || ''}</td>`;
+                        cells += `<td class="p-3 editable bg-yellow-50 hover:bg-yellow-200" contenteditable="true" data-field="summative" data-sub-index="${i}">${student.summative[i] || ''}</td>`;
                     }
-                    const ptsScore = student.pts || 0;
-                    const ptsClass = ptsScore < kkm ? 'nilai-merah' : '';
-                    cells += `<td class="p-3 editable bg-green-100 hover:bg-green-200 ${ptsClass}" contenteditable="true" data-field="pts">${student.pts || ''}</td>`;
-                    
-                    const pasScore = student.pas || 0;
-                    const pasClass = pasScore < kkm ? 'nilai-merah' : '';
-                    cells += `<td class="p-3 editable bg-pink-100 hover:bg-pink-200 ${pasClass}" contenteditable="true" data-field="pas">${student.pas || ''}</td>`;
-                    
+                    cells += `<td class="p-3 editable bg-green-50 hover:bg-green-200" contenteditable="true" data-field="pts">${student.pts || ''}</td>`;
+                    cells += `<td class="p-3 editable bg-pink-50 hover:bg-pink-200" contenteditable="true" data-field="pas">${student.pas || ''}</td>`;
                     cells += `<td class="p-3 font-bold ${scoreClass}">${finalScore}</td>`;
                     row.innerHTML = cells;
                     tbody.appendChild(row);
@@ -697,7 +753,7 @@
                 }
                 const thead = document.createElement('thead');
                 thead.className = 'text-xs text-gray-800 uppercase bg-gray-200';
-                let headers = ['No.', 'Nama Siswa', ...state.subjects.map(s => s.name), 'Rata-Rata Akhir'];
+                let headers = ['No.', 'Nama', ...state.subjects.map(s => s.name), 'Rata-Rata'];
                 thead.innerHTML = `<tr>${headers.map(h => `<th class="p-3">${h}</th>`).join('')}</tr>`;
                 table.appendChild(thead);
                 const tbody = document.createElement('tbody');
@@ -741,6 +797,7 @@
             // --- CALCULATIONS ---
             const calculateAverage = (arr) => (!arr || arr.length === 0) ? 0 : arr.reduce((acc, val) => acc + (parseFloat(val) || 0), 0) / arr.length;
             const calculateNA = (student) => {
+                if (!student) return '0.00';
                 const avgFormative = calculateAverage(student.formative);
                 const avgSummative = calculateAverage(student.summative);
                 const pts = parseFloat(student.pts) || 0;
@@ -778,7 +835,6 @@
                 const tanggalCetak = document.getElementById('tanggal-cetak').value || new Date().toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' });
                 const semesterText = state.config.activeSemester === 'semester1' ? 'SEMESTER 1' : 'SEMESTER 2';
 
-                // Header
                 doc.setFontSize(14);
                 doc.setFont('helvetica', 'bold');
                 doc.text(`REKAPITULASI NILAI AKHIR SISWA - ${semesterText}`, doc.internal.pageSize.getWidth() / 2, 15, { align: 'center' });
@@ -790,13 +846,12 @@
                 doc.setFont('helvetica', 'bold');
                 doc.text(`TAHUN AJARAN ${schoolInfo.tahunAjaran || ''}`, doc.internal.pageSize.getWidth() / 2, 34, { align: 'center' });
                 
-                // Auto Table
                 doc.autoTable({
                     html: '#recap-table',
                     startY: 40,
                     theme: 'grid',
-                    headStyles: { fillColor: [22, 160, 133], textColor: [255, 255, 255] },
-                    styles: { fontSize: 8 },
+                    headStyles: { fillColor: [22, 160, 133], textColor: [255, 255, 255], halign: 'center' },
+                    styles: { fontSize: 8, cellPadding: 2 },
                     didParseCell: function (data) {
                         if (data.cell.text[0] && data.cell.text[0].classList && data.cell.text[0].classList.contains('nilai-merah')) {
                             data.cell.styles.textColor = [255, 0, 0];
@@ -804,15 +859,12 @@
                     }
                 });
 
-                // Signature
                 const finalY = doc.autoTable.previous.finalY;
                 doc.setFontSize(10);
                 doc.text(`${lokasiCetak}, ${tanggalCetak}`, doc.internal.pageSize.getWidth() - 20, finalY + 20, { align: 'right' });
                 doc.text('Guru Kelas,', doc.internal.pageSize.getWidth() - 20, finalY + 25, { align: 'right' });
-                
                 doc.text(schoolInfo.teacherName || '(___________________)', doc.internal.pageSize.getWidth() - 20, finalY + 45, { align: 'right' });
                 doc.text(`NIP. ${schoolInfo.teacherNip || ' '}`, doc.internal.pageSize.getWidth() - 20, finalY + 50, { align: 'right' });
-
 
                 if (action === 'preview') {
                     doc.output('dataurlnewwindow');
@@ -822,90 +874,7 @@
             };
 
             const generateXlsx = () => {
-                const schoolInfo = state.schoolInfo;
-                const lokasiCetak = document.getElementById('lokasi-cetak').value || 'Semarang';
-                const tanggalCetak = document.getElementById('tanggal-cetak').value || new Date().toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' });
-                const semesterText = state.config.activeSemester === 'semester1' ? 'SEMESTER 1' : 'SEMESTER 2';
-
-                // Prepare data array
-                let dataForExcel = [];
-
-                // Headers
-                const header1 = [`REKAPITULASI NILAI AKHIR SISWA - ${semesterText}`];
-                const header2 = [schoolInfo.schoolName.toUpperCase()];
-                const header3 = [schoolInfo.schoolAddress];
-                const header4 = [`TAHUN AJARAN ${schoolInfo.tahunAjaran || ''}`];
-                dataForExcel.push(header1, header2, header3, header4, []); // Add empty row
-
-                // Table headers
-                const tableHeaders = ['No.', 'Nama Siswa', ...state.subjects.map(s => s.name), 'Rata-Rata Akhir'];
-                dataForExcel.push(tableHeaders);
-
-                // Table body
-                state.students.forEach((student, index) => {
-                    let row = [index + 1, student.name];
-                    let totalScore = 0, subjectCount = 0;
-                    state.subjects.forEach(subject => {
-                        const studentGrade = state.grades[state.config.activeSemester][subject.name] ? state.grades[state.config.activeSemester][subject.name].find(s => s.nis === student.nis) : null;
-                        const finalScore = studentGrade ? parseFloat(calculateNA(studentGrade)) : 0;
-                        row.push(finalScore.toFixed(2));
-                        if (studentGrade) { totalScore += finalScore; subjectCount++; }
-                    });
-                    const finalAverage = subjectCount > 0 ? (totalScore / subjectCount).toFixed(2) : '0.00';
-                    row.push(finalAverage);
-                    dataForExcel.push(row);
-                });
-
-                // Signature
-                dataForExcel.push([], []); // Empty rows
-                const signature = [];
-                for (let i = 0; i < tableHeaders.length - 1; i++) {
-                    signature.push(''); // empty cells for alignment
-                }
-                signature.push(`${lokasiCetak}, ${tanggalCetak}`);
-                dataForExcel.push(signature);
-
-                const signature2 = [];
-                for (let i = 0; i < tableHeaders.length - 1; i++) {
-                    signature2.push('');
-                }
-                signature2.push('Guru Kelas,');
-                dataForExcel.push(signature2);
-
-                dataForExcel.push([], [], []); // More empty rows
-
-                const signature3 = [];
-                for (let i = 0; i < tableHeaders.length - 1; i++) {
-                    signature3.push('');
-                }
-                signature3.push(schoolInfo.teacherName || '(___________________)');
-                dataForExcel.push(signature3);
-
-                const signature4 = [];
-                for (let i = 0; i < tableHeaders.length - 1; i++) {
-                    signature4.push('');
-                }
-                signature4.push(`NIP. ${schoolInfo.teacherNip || ' '}`);
-                dataForExcel.push(signature4);
-
-
-                const ws = XLSX.utils.aoa_to_sheet(dataForExcel);
-                
-                // Merging cells for headers
-                ws['!merges'] = [
-                    { s: { r: 0, c: 0 }, e: { r: 0, c: tableHeaders.length - 1 } },
-                    { s: { r: 1, c: 0 }, e: { r: 1, c: tableHeaders.length - 1 } },
-                    { s: { r: 2, c: 0 }, e: { r: 2, c: tableHeaders.length - 1 } },
-                    { s: { r: 3, c: 0 }, e: { r: 3, c: tableHeaders.length - 1 } }
-                ];
-
-                // Set column widths
-                const colWidths = [{ wch: 5 }, { wch: 30 }]; // No. and Nama Siswa
-                state.subjects.forEach(s => colWidths.push({ wch: s.name.length + 2 }));
-                colWidths.push({ wch: 15 }); // Rata-rata
-                ws['!cols'] = colWidths;
-
-
+                const ws = XLSX.utils.table_to_sheet(document.getElementById('recap-table'));
                 const wb = XLSX.utils.book_new();
                 XLSX.utils.book_append_sheet(wb, ws, 'Rekap Nilai');
                 XLSX.writeFile(wb, `rekap-nilai-${state.config.activeSemester}.xlsx`);
@@ -914,6 +883,12 @@
 
             // --- EVENT HANDLERS ---
             navLinks.forEach(link => link.addEventListener('click', (e) => { e.preventDefault(); navigate(e.currentTarget.dataset.page); }));
+            
+            // Mobile Menu Toggle
+            document.getElementById('mobile-menu-btn').addEventListener('click', () => {
+                document.getElementById('mobile-menu-dropdown').classList.toggle('open');
+            });
+
             document.getElementById('save-school-data').addEventListener('click', () => {
                 for (const key in state.schoolInfo) {
                     const inputId = key.replace(/([A-Z])/g, '-$1').toLowerCase();
@@ -934,17 +909,33 @@
                     studentClass: classInput.value.trim()
                 };
                 if (addStudent(studentData)) {
-                    nisInput.value = '';
-                    nameInput.value = '';
-                    classInput.value = '';
+                    nisInput.value = ''; nameInput.value = ''; classInput.value = '';
                     renderDataSiswa();
                     saveState();
                 }
             });
             
-            // --- Modal Siswa ---
-            const deleteModal = document.getElementById('delete-modal');
-            const editModal = document.getElementById('edit-modal');
+            // --- Modal Handlers ---
+            const setupModal = (modalId, openCallback, saveCallback, cancelCallback) => {
+                const modal = document.getElementById(modalId);
+                if (!modal) return;
+
+                const confirmBtn = modal.querySelector('.confirm-btn');
+                const saveBtn = modal.querySelector('.save-btn');
+                const cancelBtn = modal.querySelector('.cancel-btn');
+
+                if (confirmBtn) confirmBtn.addEventListener('click', saveCallback);
+                if (saveBtn) saveBtn.addEventListener('click', saveCallback);
+                if (cancelBtn) cancelBtn.addEventListener('click', () => {
+                    modal.classList.remove('active');
+                    if (cancelCallback) cancelCallback();
+                });
+            };
+
+            const openModal = (modalId) => document.getElementById(modalId).classList.add('active');
+            const closeModal = (modalId) => document.getElementById(modalId).classList.remove('active');
+
+            // Delete Student Modal
             document.getElementById('student-list-table').addEventListener('click', (e) => {
                 const target = e.target.closest('button');
                 if (!target) return;
@@ -952,13 +943,13 @@
                 const student = state.students[studentIndexToModify];
                 if (target.classList.contains('delete-student-btn')) {
                     document.getElementById('delete-student-name').textContent = student.name;
-                    deleteModal.classList.add('active');
+                    openModal('delete-modal');
                 } else if (target.classList.contains('edit-student-btn')) {
                     document.getElementById('edit-student-nis').value = student.nis;
                     document.getElementById('edit-student-name').value = student.name;
                     document.getElementById('edit-student-class').value = student.class;
                     document.querySelector(`input[name="edit-student-gender"][value="${student.gender}"]`).checked = true;
-                    editModal.classList.add('active');
+                    openModal('edit-modal');
                     document.getElementById('edit-student-name').focus();
                 }
             });
@@ -966,53 +957,45 @@
                 const student = state.students[studentIndexToModify];
                 state.students.splice(studentIndexToModify, 1);
                 ['semester1', 'semester2'].forEach(semester => {
-                    state.subjects.forEach(subject => {
-                        if (state.grades[semester][subject.name]) {
-                            state.grades[semester][subject.name] = state.grades[semester][subject.name].filter(s => s.nis !== student.nis);
-                        }
+                    Object.keys(state.grades[semester]).forEach(subject => {
+                        state.grades[semester][subject] = state.grades[semester][subject].filter(s => s.nis !== student.nis);
                     });
                 });
                 renderDataSiswa();
                 saveState();
-                deleteModal.classList.remove('active');
+                closeModal('delete-modal');
                 studentIndexToModify = null;
             });
-            document.getElementById('cancel-delete-btn').addEventListener('click', () => deleteModal.classList.remove('active'));
+            document.getElementById('cancel-delete-btn').addEventListener('click', () => closeModal('delete-modal'));
+            
+            // Edit Student Modal
             document.getElementById('save-edit-btn').addEventListener('click', () => {
                 const newName = document.getElementById('edit-student-name').value.trim();
                 const newClass = document.getElementById('edit-student-class').value.trim();
                 const newGender = document.querySelector('input[name="edit-student-gender"]:checked').value;
                 if (newName && newClass) {
                     const student = state.students[studentIndexToModify];
-                    student.name = newName;
-                    student.class = newClass;
-                    student.gender = newGender;
+                    student.name = newName; student.class = newClass; student.gender = newGender;
                     ['semester1', 'semester2'].forEach(semester => {
-                        state.subjects.forEach(subject => {
-                           if (state.grades[semester][subject.name]) {
-                               const studentGrade = state.grades[semester][subject.name].find(s => s.nis === student.nis);
-                               if(studentGrade) studentGrade.name = newName;
-                           }
-                        });
+                       Object.keys(state.grades[semester]).forEach(subject => {
+                           const studentGrade = state.grades[semester][subject].find(s => s.nis === student.nis);
+                           if(studentGrade) studentGrade.name = newName;
+                       });
                     });
                     renderDataSiswa();
                     saveState();
-                    editModal.classList.remove('active');
+                    closeModal('edit-modal');
                     studentIndexToModify = null;
-                } else alert('Nama dan Kelas siswa tidak boleh kosong.');
+                } else alert('Nama dan Kelas tidak boleh kosong.');
             });
-            document.getElementById('cancel-edit-btn').addEventListener('click', () => editModal.classList.remove('active'));
+            document.getElementById('cancel-edit-btn').addEventListener('click', () => closeModal('edit-modal'));
 
-            // --- Modal Mata Pelajaran ---
-            const subjectsModal = document.getElementById('subjects-modal');
-            const editSubjectModal = document.getElementById('edit-subject-modal');
-            const deleteSubjectModal = document.getElementById('delete-subject-modal');
-
+            // --- Subjects Modals ---
             document.getElementById('edit-subjects-btn').addEventListener('click', () => {
                 renderSubjectsModal();
-                subjectsModal.classList.add('active');
+                openModal('subjects-modal');
             });
-            document.getElementById('close-subjects-modal-btn').addEventListener('click', () => subjectsModal.classList.remove('active'));
+            document.getElementById('close-subjects-modal-btn').addEventListener('click', () => closeModal('subjects-modal'));
             document.getElementById('add-subject-btn').addEventListener('click', () => {
                 const inputName = document.getElementById('new-subject-name');
                 const inputKkm = document.getElementById('new-subject-kkm');
@@ -1026,170 +1009,125 @@
                             state.grades[semester][newSubjectName].push({ nis: student.nis, name: student.name, formative: [0], summative: [0], pts: 0, pas: 0 });
                         });
                     });
-                    inputName.value = '';
-                    inputKkm.value = '';
-                    renderSubjectsModal();
-                    renderOlahNilai();
-                    saveState();
-                } else alert('Mata pelajaran tidak boleh kosong atau sudah ada.');
+                    inputName.value = ''; inputKkm.value = '';
+                    renderSubjectsModal(); renderOlahNilai(); saveState();
+                } else alert('Mapel tidak boleh kosong atau sudah ada.');
             });
-            document.getElementById('subjects-list').addEventListener('click', (e) => {
+             document.getElementById('subjects-list').addEventListener('click', (e) => {
                 const target = e.target.closest('button');
                 if (!target) return;
                 const subjectName = target.dataset.subject;
-
                 if (target.classList.contains('delete-subject-btn')) {
                     subjectToDelete = subjectName;
                     document.getElementById('delete-subject-name').textContent = subjectName;
-                    deleteSubjectModal.classList.add('active');
+                    openModal('delete-subject-modal');
                 } else if (target.classList.contains('edit-subject-btn')) {
                     subjectToEdit = state.subjects.find(s => s.name === subjectName);
                     if (subjectToEdit) {
                         document.getElementById('edit-subject-input').value = subjectToEdit.name;
                         document.getElementById('edit-subject-kkm').value = subjectToEdit.kkm;
-                        editSubjectModal.classList.add('active');
-                        document.getElementById('edit-subject-input').focus();
+                        openModal('edit-subject-modal');
                     }
                 }
             });
-            document.getElementById('cancel-edit-subject-btn').addEventListener('click', () => editSubjectModal.classList.remove('active'));
             document.getElementById('save-edit-subject-btn').addEventListener('click', () => {
                 const newName = document.getElementById('edit-subject-input').value.trim();
                 const newKkm = parseInt(document.getElementById('edit-subject-kkm').value) || 0;
                 const isNameUnique = !state.subjects.some(s => s.name === newName && s.name !== subjectToEdit.name);
-
                 if (newName && isNameUnique) {
                     const oldName = subjectToEdit.name;
-                    subjectToEdit.name = newName;
-                    subjectToEdit.kkm = newKkm;
-                    
+                    subjectToEdit.name = newName; subjectToEdit.kkm = newKkm;
                     if (oldName !== newName) {
                         ['semester1', 'semester2'].forEach(semester => {
                             state.grades[semester][newName] = state.grades[semester][oldName];
                             delete state.grades[semester][oldName];
                         });
                     }
-
-                    if (state.config.activeSubject === oldName) {
-                        state.config.activeSubject = newName;
-                    }
-                    
-                    renderSubjectsModal();
-                    renderOlahNilai();
-                    saveState();
-                    editSubjectModal.classList.remove('active');
-                    subjectToEdit = null;
-                } else {
-                    alert('Nama mata pelajaran tidak boleh kosong atau sudah ada.');
-                }
+                    if (state.config.activeSubject === oldName) state.config.activeSubject = newName;
+                    renderSubjectsModal(); renderOlahNilai(); saveState();
+                    closeModal('edit-subject-modal'); subjectToEdit = null;
+                } else alert('Nama mapel tidak boleh kosong atau sudah ada.');
             });
+            document.getElementById('cancel-edit-subject-btn').addEventListener('click', () => closeModal('edit-subject-modal'));
             document.getElementById('confirm-delete-subject-btn').addEventListener('click', () => {
                 state.subjects = state.subjects.filter(s => s.name !== subjectToDelete);
-                ['semester1', 'semester2'].forEach(semester => {
-                    delete state.grades[semester][subjectToDelete];
-                });
-                if (state.config.activeSubject === subjectToDelete) {
-                    state.config.activeSubject = state.subjects.length > 0 ? state.subjects[0].name : null;
-                }
-                renderSubjectsModal();
-                renderOlahNilai();
-                saveState();
-                deleteSubjectModal.classList.remove('active');
-                subjectToDelete = null;
+                ['semester1', 'semester2'].forEach(semester => delete state.grades[semester][subjectToDelete]);
+                if (state.config.activeSubject === subjectToDelete) state.config.activeSubject = state.subjects.length > 0 ? state.subjects[0].name : null;
+                renderSubjectsModal(); renderOlahNilai(); saveState();
+                closeModal('delete-subject-modal'); subjectToDelete = null;
             });
-            document.getElementById('cancel-delete-subject-btn').addEventListener('click', () => deleteSubjectModal.classList.remove('active'));
+            document.getElementById('cancel-delete-subject-btn').addEventListener('click', () => closeModal('delete-subject-modal'));
 
             // --- Semester Tab Handlers ---
             document.querySelectorAll('.semester-tab').forEach(tab => {
                 tab.addEventListener('click', (e) => {
-                    const newSemester = e.target.dataset.semester;
-                    state.config.activeSemester = newSemester;
-                    if (state.config.activePage === 'olah-nilai') {
-                        renderOlahNilai();
-                    } else if (state.config.activePage === 'rekap-nilai') {
-                        renderRekapNilai();
-                    }
+                    state.config.activeSemester = e.target.dataset.semester;
+                    if (state.config.activePage === 'olah-nilai') renderOlahNilai();
+                    else if (state.config.activePage === 'rekap-nilai') renderRekapNilai();
                     saveState();
                 });
             });
 
-            // --- Handler Lain ---
+            // --- Other Handlers ---
             document.getElementById('upload-excel').addEventListener('change', (e) => {
                 const file = e.target.files[0];
                 const reader = new FileReader();
                 reader.onload = (event) => {
-                    const data = new Uint8Array(event.target.result);
-                    const workbook = XLSX.read(data, {type: 'array'});
-                    const firstSheetName = workbook.SheetNames[0];
-                    const worksheet = workbook.Sheets[firstSheetName];
-                    const json = XLSX.utils.sheet_to_json(worksheet, {header: 1});
-                    let count = 0;
-                    json.forEach((row, rowIndex) => {
-                        if (rowIndex >= 0 && row[0] && row[1] && row[2] && row[3]) {
-                            const studentData = {
-                                nis: row[0].toString().trim(),
-                                name: row[1].toString().trim(),
-                                studentClass: row[2].toString().trim(),
-                                gender: row[3].toString().trim().toUpperCase()
-                            };
-                            if (addStudent(studentData)) count++;
-                        }
-                    });
-                    renderDataSiswa();
-                    saveState();
-                    alert(`${count} siswa baru berhasil ditambahkan dari file.`);
+                    try {
+                        const data = new Uint8Array(event.target.result);
+                        const workbook = XLSX.read(data, {type: 'array'});
+                        const firstSheetName = workbook.SheetNames[0];
+                        const worksheet = workbook.Sheets[firstSheetName];
+                        const json = XLSX.utils.sheet_to_json(worksheet, {header: 1});
+                        let count = 0;
+                        json.forEach((row, rowIndex) => {
+                            if (rowIndex >= 0 && row[0] && row[1] && row[2] && row[3]) {
+                                if (addStudent({
+                                    nis: row[0].toString().trim(), name: row[1].toString().trim(),
+                                    studentClass: row[2].toString().trim(), gender: row[3].toString().trim().toUpperCase()
+                                })) count++;
+                            }
+                        });
+                        renderDataSiswa(); saveState();
+                        alert(`${count} siswa baru berhasil ditambahkan.`);
+                    } catch (error) {
+                        alert('Gagal memproses file. Pastikan format file Excel sudah benar.');
+                        console.error("Excel processing error:", error);
+                    }
                 };
                 reader.readAsArrayBuffer(file);
                 e.target.value = '';
             });
             document.getElementById('subject-selector').addEventListener('change', (e) => {
                 state.config.activeSubject = e.target.value;
-                renderOlahNilai();
-                saveState();
+                renderOlahNilai(); saveState();
             });
             document.getElementById('kkm-input').addEventListener('change', (e) => {
                 const activeSubjectObj = state.subjects.find(s => s.name === state.config.activeSubject);
                 if (activeSubjectObj) {
                     activeSubjectObj.kkm = parseInt(e.target.value) || 0;
-                    renderGradesTable();
-                    saveState();
+                    renderGradesTable(); saveState();
                 }
             });
             document.getElementById('add-formative-btn').addEventListener('click', () => {
                 const grades = state.grades[state.config.activeSemester][state.config.activeSubject];
-                if (grades) {
-                    grades.forEach(s => s.formative.push(0));
-                    renderGradesTable();
-                    saveState();
-                }
+                if (grades) { grades.forEach(s => s.formative.push(0)); renderGradesTable(); saveState(); }
             });
             document.getElementById('add-summative-btn').addEventListener('click', () => {
                  const grades = state.grades[state.config.activeSemester][state.config.activeSubject];
-                 if (grades) {
-                    grades.forEach(s => s.summative.push(0));
-                    renderGradesTable();
-                    saveState();
-                }
+                 if (grades) { grades.forEach(s => s.summative.push(0)); renderGradesTable(); saveState(); }
             });
             document.getElementById('delete-formative-btn').addEventListener('click', () => {
                 const grades = state.grades[state.config.activeSemester][state.config.activeSubject];
                 if (grades && grades.length > 0 && grades[0].formative.length > 1) {
-                    grades.forEach(s => s.formative.pop());
-                    renderGradesTable();
-                    saveState();
-                } else {
-                    alert('Tidak dapat menghapus kolom AF terakhir.');
-                }
+                    grades.forEach(s => s.formative.pop()); renderGradesTable(); saveState();
+                } else alert('Tidak dapat menghapus kolom AF terakhir.');
             });
             document.getElementById('delete-summative-btn').addEventListener('click', () => {
                 const grades = state.grades[state.config.activeSemester][state.config.activeSubject];
                 if (grades && grades.length > 0 && grades[0].summative.length > 1) {
-                    grades.forEach(s => s.summative.pop());
-                    renderGradesTable();
-                    saveState();
-                } else {
-                    alert('Tidak dapat menghapus kolom PH terakhir.');
-                }
+                    grades.forEach(s => s.summative.pop()); renderGradesTable(); saveState();
+                } else alert('Tidak dapat menghapus kolom PH terakhir.');
             });
             document.getElementById('grades-table').addEventListener('focusout', (e) => {
                 if (e.target.classList.contains('editable')) {
@@ -1201,31 +1139,15 @@
                     const student = state.grades[state.config.activeSemester][state.config.activeSubject].find(s => s.nis === studentNis);
                     if (!student) return;
                     
-                    const activeSubjectObj = state.subjects.find(s => s.name === state.config.activeSubject);
-                    const kkm = activeSubjectObj ? activeSubjectObj.kkm : 0;
-
-                    if (field === 'pts' || field === 'pas') {
-                        student[field] = parseFloat(newValue) || 0;
-                    } else if (field === 'formative' || field === 'summative') {
-                        student[field][subIndex] = parseFloat(newValue) || 0;
-                    }
-
-                    // Update color of the edited cell
-                    cell.classList.toggle('nilai-merah', (parseFloat(newValue) || 0) < kkm);
+                    if (field === 'pts' || field === 'pas') student[field] = parseFloat(newValue) || 0;
+                    else if (field === 'formative' || field === 'summative') student[field][subIndex] = parseFloat(newValue) || 0;
                     
-                    // Update final score and its color
-                    const finalScore = calculateNA(student);
-                    const scoreCell = cell.parentElement.querySelector('td:last-child');
-                    scoreCell.textContent = finalScore;
-                    scoreCell.className = `p-3 font-bold ${parseFloat(finalScore) < kkm ? 'nilai-merah' : 'text-blue-600'}`;
+                    renderGradesTable(); // Re-render to update all colors
                     saveState();
                 }
             });
             document.getElementById('grades-table').addEventListener('keydown', (e) => {
-                if (e.key === 'Enter' && e.target.classList.contains('editable')) {
-                    e.preventDefault();
-                    e.target.blur();
-                }
+                if (e.key === 'Enter' && e.target.classList.contains('editable')) { e.preventDefault(); e.target.blur(); }
             });
             
             // PDF & XLSX Handlers
@@ -1239,36 +1161,26 @@
                 const newUsername = document.getElementById('new-username').value.trim();
                 const newPassword = document.getElementById('new-password').value;
                 const messageEl = document.getElementById('settings-message');
-
                 if (currentPassword !== state.credentials.password) {
                     messageEl.textContent = 'Password saat ini salah!';
                     messageEl.className = 'text-sm text-center text-red-500';
                     return;
                 }
-
-                if (newUsername) {
-                    state.credentials.username = newUsername;
-                }
-                if (newPassword) {
-                    state.credentials.password = newPassword;
-                }
-                
+                if (newUsername) state.credentials.username = newUsername;
+                if (newPassword) state.credentials.password = newPassword;
                 saveState();
                 messageEl.textContent = 'Pengaturan berhasil disimpan!';
                 messageEl.className = 'text-sm text-center text-green-500';
-
-                // Clear fields
                 document.getElementById('current-password').value = '';
                 document.getElementById('new-username').value = '';
                 document.getElementById('new-password').value = '';
-
                 setTimeout(() => { messageEl.textContent = '' }, 3000);
             });
 
-            // Logout Handler
-            document.getElementById('logout-btn').addEventListener('click', () => {
-                window.location.reload();
-            });
+            // Logout Handlers
+            const logout = () => window.location.reload();
+            document.getElementById('logout-btn').addEventListener('click', logout);
+            document.getElementById('logout-btn-mobile').addEventListener('click', logout);
 
             // Initial Load
             loadState();
