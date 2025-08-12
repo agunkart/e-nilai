@@ -1,0 +1,1279 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Aplikasi Input Nilai Siswa - Multi Halaman</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.23/jspdf.plugin.autotable.min.js"></script>
+    <style>
+        body { font-family: 'Inter', sans-serif; }
+        .editable { cursor: pointer; transition: background-color 0.3s; }
+        td[contenteditable="true"] { min-width: 60px; }
+        th, td { white-space: nowrap; padding: 10px 14px; }
+        .table-container::-webkit-scrollbar { width: 8px; height: 8px; }
+        .table-container::-webkit-scrollbar-track { background: #f1f1f1; border-radius: 10px; }
+        .table-container::-webkit-scrollbar-thumb { background: #888; border-radius: 10px; }
+        .table-container::-webkit-scrollbar-thumb:hover { background: #555; }
+        .page { display: none; }
+        .page.active { display: block; }
+        .nav-link { transition: background-color 0.3s, color 0.3s; }
+        .nav-link.active { background-color: #1d4ed8; color: white; }
+        input[type="file"] { display: none; }
+        .modal { display: none; }
+        .modal.active { display: flex; }
+        .nilai-merah { color: #dc2626; font-weight: bold; }
+        .semester-tab {
+            cursor: pointer;
+            padding: 8px 16px;
+            border-bottom: 2px solid transparent;
+        }
+        .semester-tab.active {
+            border-bottom-color: #3b82f6;
+            color: #3b82f6;
+            font-weight: 600;
+        }
+    </style>
+</head>
+<body class="bg-gray-100 text-gray-800">
+
+    <div id="login-container" class="flex items-center justify-center h-screen bg-gray-200">
+        <div class="w-full max-w-md bg-white p-8 rounded-xl shadow-lg">
+            <div class="text-center mb-8">
+                <i class="fas fa-book-reader text-5xl text-blue-600"></i>
+                <h1 class="text-3xl font-bold text-gray-800 mt-4">E-Nilai Login</h1>
+                <p class="text-gray-500">Silakan masuk untuk melanjutkan</p>
+            </div>
+            <div class="space-y-4">
+                <div>
+                    <label for="username" class="block text-sm font-medium text-gray-700">Username</label>
+                    <input type="text" id="username" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm p-2 focus:border-indigo-500 focus:ring-indigo-500">
+                </div>
+                <div>
+                    <label for="password" class="block text-sm font-medium text-gray-700">Password</label>
+                    <input type="password" id="password" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm p-2 focus:border-indigo-500 focus:ring-indigo-500">
+                </div>
+                <p id="login-error" class="text-red-500 text-sm text-center hidden">Username atau password salah!</p>
+                <button id="login-btn" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded-lg transition duration-300">Masuk</button>
+                <p class="text-center text-sm mt-4"><a href="#" id="reset-password-link" class="font-medium text-blue-600 hover:text-blue-800">Lupa Password?</a></p>
+                <p class="text-center text-sm text-gray-600 mt-6">
+                    Informasi dan Saran gabung ke 
+                    <a href="https://chat.whatsapp.com/LvzbnBgTffKCGUIStyayh5" target="_blank" class="font-medium text-green-600 hover:text-green-800">
+                        <i class="fab fa-whatsapp"></i> WA Group
+                    </a>
+                </p>
+                <p class="text-center text-xs text-gray-500 pt-2">Pengembang: Agung Kurniawan, S.Pd.</p>
+            </div>
+        </div>
+    </div>
+
+    <div id="app-container" class="hidden">
+        <div class="flex h-screen bg-gray-200">
+            <aside class="w-64 bg-gray-800 text-white flex-shrink-0 flex flex-col">
+                <div class="p-6 text-2xl font-bold border-b border-gray-700">
+                    <i class="fas fa-book-reader mr-2"></i> E-Nilai
+                </div>
+                <nav class="mt-6 flex-grow">
+                    <a href="#" class="nav-link flex items-center py-3 px-6 hover:bg-gray-700" data-page="data-sekolah">
+                        <i class="fas fa-school w-6 mr-3"></i> Data Sekolah
+                    </a>
+                    <a href="#" class="nav-link flex items-center py-3 px-6 hover:bg-gray-700" data-page="data-siswa">
+                        <i class="fas fa-users w-6 mr-3"></i> Data Siswa
+                    </a>
+                    <a href="#" class="nav-link flex items-center py-3 px-6 hover:bg-gray-700" data-page="olah-nilai">
+                        <i class="fas fa-edit w-6 mr-3"></i> Olah Nilai
+                    </a>
+                    <a href="#" class="nav-link flex items-center py-3 px-6 hover:bg-gray-700" data-page="rekap-nilai">
+                        <i class="fas fa-chart-bar w-6 mr-3"></i> Rekap Nilai
+                    </a>
+                    <a href="#" class="nav-link flex items-center py-3 px-6 hover:bg-gray-700" data-page="pengaturan">
+                        <i class="fas fa-user-cog w-6 mr-3"></i> Pengaturan
+                    </a>
+                </nav>
+                <div class="p-4 border-t border-gray-700">
+                    <a href="https://chat.whatsapp.com/LvzbnBgTffKCGUIStyayh5" target="_blank" class="w-full flex items-center justify-center py-2 px-4 rounded-lg bg-green-600 hover:bg-green-700 mb-4 transition-colors">
+                         <i class="fab fa-whatsapp mr-2"></i> Grup WA
+                    </a>
+                    <button id="logout-btn" class="w-full flex items-center justify-center py-2 px-4 bg-red-600 hover:bg-red-700 rounded-lg">
+                        <i class="fas fa-sign-out-alt mr-2"></i> Keluar
+                    </button>
+                </div>
+            </aside>
+
+            <main class="flex-1 flex flex-col overflow-hidden">
+                <div class="flex-1 overflow-x-hidden overflow-y-auto bg-gray-100 p-4 sm:p-6 lg:p-8">
+                    
+                    <div id="page-data-sekolah" class="page">
+                        <h1 class="text-3xl font-bold text-gray-900 mb-6">Data Sekolah & Guru</h1>
+                        <div class="space-y-8">
+                            <div class="bg-white p-8 rounded-xl shadow-md">
+                                <h2 class="text-xl font-semibold text-gray-800 mb-6 border-b pb-4">Informasi Institusi</h2>
+                                <div class="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-6">
+                                    <div class="md:col-span-2">
+                                        <label class="block text-sm font-medium text-gray-700 mb-1"><i class="fas fa-school mr-2 text-gray-400"></i>Nama Sekolah</label>
+                                        <input type="text" id="school-name" class="block w-full rounded-md border-gray-300 shadow-sm p-2">
+                                    </div>
+                                    <div class="md:col-span-2">
+                                        <label class="block text-sm font-medium text-gray-700 mb-1"><i class="fas fa-map-marker-alt mr-2 text-gray-400"></i>Alamat Sekolah</label>
+                                        <input type="text" id="school-address" class="block w-full rounded-md border-gray-300 shadow-sm p-2">
+                                    </div>
+                                    <div>
+                                        <label class="block text-sm font-medium text-gray-700 mb-1"><i class="fas fa-calendar-alt mr-2 text-gray-400"></i>Tahun Ajaran</label>
+                                        <input type="text" id="tahun-ajaran" placeholder="Contoh: 2024/2025" class="block w-full rounded-md border-gray-300 shadow-sm p-2">
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="bg-white p-8 rounded-xl shadow-md">
+                                <h2 class="text-xl font-semibold text-gray-800 mb-6 border-b pb-4">Penanggung Jawab</h2>
+                                <div class="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-6">
+                                    <div>
+                                        <label class="block text-sm font-medium text-gray-700 mb-1"><i class="fas fa-user-tie mr-2 text-gray-400"></i>Nama Kepala Sekolah</label>
+                                        <input type="text" id="ks-name" class="block w-full rounded-md border-gray-300 shadow-sm p-2">
+                                    </div>
+                                    <div>
+                                        <label class="block text-sm font-medium text-gray-700 mb-1"><i class="fas fa-id-card mr-2 text-gray-400"></i>NIP Kepala Sekolah</label>
+                                        <input type="text" id="ks-nip" class="block w-full rounded-md border-gray-300 shadow-sm p-2">
+                                    </div>
+                                    <div>
+                                        <label class="block text-sm font-medium text-gray-700 mb-1"><i class="fas fa-chalkboard-teacher mr-2 text-gray-400"></i>Nama Guru</label>
+                                        <input type="text" id="teacher-name" class="block w-full rounded-md border-gray-300 shadow-sm p-2">
+                                    </div>
+                                    <div>
+                                        <label class="block text-sm font-medium text-gray-700 mb-1"><i class="fas fa-id-card mr-2 text-gray-400"></i>NIP Guru</label>
+                                        <input type="text" id="teacher-nip" class="block w-full rounded-md border-gray-300 shadow-sm p-2">
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="mt-4 text-right">
+                                 <button id="save-school-data" class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-6 rounded-lg transition duration-300">
+                                    <i class="fas fa-save mr-2"></i>Simpan Data
+                                 </button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div id="page-data-siswa" class="page">
+                        <h1 class="text-3xl font-bold text-gray-900 mb-6">Manajemen Data Siswa</h1>
+                        <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                            <div class="lg:col-span-1 bg-white p-6 rounded-xl shadow-md flex flex-col">
+                                <h3 class="text-lg font-semibold mb-4">Tambah Siswa</h3>
+                                <div class="space-y-3 mb-4">
+                                    <div>
+                                        <label class="block text-sm font-medium text-gray-700">NIS</label>
+                                        <input type="text" id="new-student-nis" placeholder="Nomor Induk Siswa" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm p-2">
+                                    </div>
+                                    <div>
+                                        <label class="block text-sm font-medium text-gray-700">Nama Lengkap</label>
+                                        <input type="text" id="new-student-name" placeholder="Ketik nama siswa..." class="mt-1 block w-full rounded-md border-gray-300 shadow-sm p-2">
+                                    </div>
+                                    <div>
+                                        <label class="block text-sm font-medium text-gray-700">Kelas</label>
+                                        <input type="text" id="new-student-class" placeholder="Contoh: IV-A" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm p-2">
+                                    </div>
+                                    <div>
+                                        <label class="block text-sm font-medium text-gray-700">Jenis Kelamin</label>
+                                        <div class="mt-1 flex gap-4">
+                                            <label class="inline-flex items-center"><input type="radio" name="new-student-gender" value="L" class="form-radio" checked> <span class="ml-2">Laki-laki</span></label>
+                                            <label class="inline-flex items-center"><input type="radio" name="new-student-gender" value="P" class="form-radio"> <span class="ml-2">Perempuan</span></label>
+                                        </div>
+                                    </div>
+                                    <button id="add-student-btn" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded-lg !mt-4">Tambah</button>
+                                </div>
+                                <div class="border-t pt-4 mt-4">
+                                    <label class="block text-sm font-medium text-gray-700 mb-1">Unggah dari File</label>
+                                    <input type="file" id="upload-excel" accept=".xlsx, .xls">
+                                    <label for="upload-excel" class="w-full cursor-pointer bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-4 rounded-lg flex items-center justify-center">
+                                        <i class="fas fa-file-excel mr-2"></i> Pilih File .xlsx
+                                    </label>
+                                    <p class="text-xs text-gray-500 mt-2">Format: Kolom A: NIS, B: Nama, C: Kelas, D: Jenis Kelamin (L/P).</p>
+                                </div>
+                            </div>
+                            <div class="lg:col-span-2 bg-white p-6 rounded-xl shadow-md">
+                                 <h3 class="text-lg font-semibold mb-4">Daftar Siswa</h3>
+                                 <div class="table-container overflow-x-auto">
+                                    <table id="student-list-table" class="w-full text-sm text-left text-gray-700"></table>
+                                 </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div id="page-olah-nilai" class="page">
+                        <h1 class="text-3xl font-bold text-gray-900 mb-6">Olah Nilai Siswa</h1>
+                        <div class="flex border-b mb-6">
+                            <div class="semester-tab" data-semester="semester1">Semester 1</div>
+                            <div class="semester-tab" data-semester="semester2">Semester 2</div>
+                        </div>
+                        <div class="bg-white p-6 rounded-xl shadow-md mb-6">
+                            <div class="flex flex-wrap justify-between items-center gap-4">
+                                <div class="flex items-center gap-4">
+                                    <div>
+                                        <label for="subject-selector" class="block text-sm font-medium text-gray-700 mb-2">Pilih Mata Pelajaran:</label>
+                                        <select id="subject-selector" class="w-full md:w-auto bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg p-2.5"></select>
+                                    </div>
+                                    <div>
+                                        <label for="kkm-input" class="block text-sm font-medium text-gray-700 mb-2">KKM:</label>
+                                        <input type="number" id="kkm-input" class="w-24 bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg p-2.5">
+                                    </div>
+                                </div>
+                                <button id="edit-subjects-btn" class="bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-2 px-4 rounded-lg">
+                                    <i class="fas fa-cog mr-2"></i> Kelola Mapel
+                                </button>
+                            </div>
+                        </div>
+                        <div class="bg-white rounded-xl shadow-md overflow-hidden">
+                            <div id="table-container" class="table-container overflow-x-auto">
+                                <table id="grades-table" class="w-full text-sm text-left text-gray-700">
+                                    <thead class="text-xs text-gray-800 uppercase"></thead>
+                                    <tbody class="bg-white"></tbody>
+                                </table>
+                            </div>
+                            <div class="p-4 bg-gray-50 border-t flex flex-wrap gap-4 justify-center">
+                                <div class="flex gap-2">
+                                    <button id="add-formative-btn" class="bg-blue-500 hover:bg-blue-600 text-white font-semibold py-2 px-4 rounded-lg text-xs">+ Tambah Kolom AF</button>
+                                    <button id="delete-formative-btn" class="bg-red-500 hover:bg-red-600 text-white font-semibold py-2 px-4 rounded-lg text-xs">- Hapus Kolom AF</button>
+                                </div>
+                                <div class="flex gap-2">
+                                    <button id="add-summative-btn" class="bg-yellow-500 hover:bg-yellow-600 text-white font-semibold py-2 px-4 rounded-lg text-xs">+ Tambah Kolom PH</button>
+                                    <button id="delete-summative-btn" class="bg-red-500 hover:bg-red-600 text-white font-semibold py-2 px-4 rounded-lg text-xs">- Hapus Kolom PH</button>
+                                </div>
+                            </div>
+                             <div class="p-2 text-center bg-gray-50 text-xs text-gray-600 border-t">
+                                Keterangan: <strong>AF</strong> = Asesmen Formatif, <strong>PH</strong> = Penilaian Harian
+                            </div>
+                        </div>
+                    </div>
+
+                    <div id="page-rekap-nilai" class="page">
+                        <div class="flex justify-between items-start mb-6">
+                            <h1 class="text-3xl font-bold text-gray-900">Rekapitulasi Nilai Akhir</h1>
+                            <div class="flex gap-2">
+                                <button id="preview-pdf-btn" class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded-lg">
+                                    <i class="fas fa-eye mr-2"></i> Pratinjau PDF
+                                </button>
+                                <button id="download-pdf-btn" class="bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-4 rounded-lg">
+                                    <i class="fas fa-download mr-2"></i> Unduh PDF
+                                </button>
+                                <button id="download-excel-btn" class="bg-teal-600 hover:bg-teal-700 text-white font-bold py-2 px-4 rounded-lg">
+                                    <i class="fas fa-file-excel mr-2"></i> Unduh XLSX
+                                </button>
+                            </div>
+                        </div>
+                         <div class="flex border-b mb-6">
+                            <div class="semester-tab" data-semester="semester1">Semester 1</div>
+                            <div class="semester-tab" data-semester="semester2">Semester 2</div>
+                        </div>
+                        <div class="bg-white p-4 rounded-xl shadow-sm mb-6">
+                            <div class="flex flex-wrap gap-4 items-end">
+                                 <div>
+                                    <label for="lokasi-cetak" class="block text-sm font-medium text-gray-700">Lokasi Cetak</label>
+                                    <input type="text" id="lokasi-cetak" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm p-2">
+                                </div>
+                                <div>
+                                    <label for="tanggal-cetak" class="block text-sm font-medium text-gray-700">Tanggal Cetak</label>
+                                    <input type="text" id="tanggal-cetak" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm p-2">
+                                </div>
+                            </div>
+                        </div>
+                        <div class="bg-white rounded-xl shadow-md overflow-hidden">
+                            <div class="table-container overflow-x-auto">
+                                <table id="recap-table" class="w-full text-sm text-left text-gray-700"></table>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div id="page-pengaturan" class="page">
+                        <h1 class="text-3xl font-bold text-gray-900 mb-6">Pengaturan Akun</h1>
+                        <div class="bg-white p-8 rounded-xl shadow-md max-w-lg mx-auto">
+                            <h2 class="text-xl font-semibold text-gray-800 mb-6 border-b pb-4">Ubah Username & Password</h2>
+                            <div class="space-y-4">
+                                <div>
+                                    <label for="current-password" class="block text-sm font-medium text-gray-700">Password Saat Ini</label>
+                                    <input type="password" id="current-password" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm p-2" required>
+                                </div>
+                                <div>
+                                    <label for="new-username" class="block text-sm font-medium text-gray-700">Username Baru</label>
+                                    <input type="text" id="new-username" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm p-2">
+                                </div>
+                                <div>
+                                    <label for="new-password" class="block text-sm font-medium text-gray-700">Password Baru</label>
+                                    <input type="password" id="new-password" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm p-2">
+                                </div>
+                                <p id="settings-message" class="text-sm text-center"></p>
+                                <button id="save-settings-btn" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded-lg transition duration-300">Simpan Perubahan</button>
+                            </div>
+                        </div>
+                    </div>
+
+                </div>
+            </main>
+        </div>
+    </div>
+
+    <div id="delete-modal" class="modal fixed inset-0 bg-black bg-opacity-50 items-center justify-center z-50">
+        <div class="bg-white p-8 rounded-lg shadow-xl w-full max-w-sm">
+            <h3 class="text-lg font-bold text-gray-900">Konfirmasi Hapus</h3>
+            <p class="my-4 text-gray-700">Apakah Anda yakin ingin menghapus siswa <strong id="delete-student-name" class="text-red-600"></strong>?</p>
+            <div class="flex justify-end gap-4 mt-6">
+                <button id="cancel-delete-btn" class="px-4 py-2 rounded bg-gray-300 hover:bg-gray-400 transition-colors">Batal</button>
+                <button id="confirm-delete-btn" class="px-4 py-2 rounded bg-red-600 text-white hover:bg-red-700 transition-colors">Hapus</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="edit-modal" class="modal fixed inset-0 bg-black bg-opacity-50 items-center justify-center z-50">
+        <div class="bg-white p-8 rounded-lg shadow-xl w-full max-w-md">
+            <h3 class="text-lg font-bold text-gray-900">Edit Data Siswa</h3>
+            <div class="my-4 space-y-3">
+                <div>
+                    <label class="block text-sm font-medium text-gray-700">NIS (Tidak dapat diubah)</label>
+                    <input type="text" id="edit-student-nis" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm p-2 bg-gray-100" readonly>
+                </div>
+                <div>
+                    <label for="edit-student-name" class="block text-sm font-medium text-gray-700">Nama Baru</label>
+                    <input type="text" id="edit-student-name" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm p-2 focus:border-indigo-500 focus:ring-indigo-500">
+                </div>
+                <div>
+                    <label for="edit-student-class" class="block text-sm font-medium text-gray-700">Kelas</label>
+                    <input type="text" id="edit-student-class" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm p-2 focus:border-indigo-500 focus:ring-indigo-500">
+                </div>
+                 <div>
+                    <label class="block text-sm font-medium text-gray-700">Jenis Kelamin</label>
+                    <div class="mt-1 flex gap-4">
+                        <label class="inline-flex items-center"><input type="radio" name="edit-student-gender" value="L" class="form-radio"> <span class="ml-2">Laki-laki</span></label>
+                        <label class="inline-flex items-center"><input type="radio" name="edit-student-gender" value="P" class="form-radio"> <span class="ml-2">Perempuan</span></label>
+                    </div>
+                </div>
+            </div>
+            <div class="flex justify-end gap-4 mt-6">
+                <button id="cancel-edit-btn" class="px-4 py-2 rounded bg-gray-300 hover:bg-gray-400 transition-colors">Batal</button>
+                <button id="save-edit-btn" class="px-4 py-2 rounded bg-blue-600 text-white hover:bg-blue-700 transition-colors">Simpan</button>
+            </div>
+        </div>
+    </div>
+    
+    <div id="subjects-modal" class="modal fixed inset-0 bg-black bg-opacity-50 items-center justify-center z-50">
+        <div class="bg-white p-8 rounded-lg shadow-xl w-full max-w-lg">
+            <h3 class="text-lg font-bold text-gray-900 mb-4">Kelola Mata Pelajaran</h3>
+            <div class="max-h-64 overflow-y-auto border rounded-lg p-4">
+                <ul id="subjects-list" class="space-y-2">
+                    </ul>
+            </div>
+            <div class="mt-6 border-t pt-6">
+                <h4 class="text-md font-semibold mb-2">Tambah Mata Pelajaran Baru</h4>
+                <div class="flex gap-2">
+                    <input type="text" id="new-subject-name" placeholder="Nama mata pelajaran..." class="flex-grow block w-full rounded-md border-gray-300 shadow-sm p-2">
+                    <input type="number" id="new-subject-kkm" placeholder="KKM" class="w-24 block rounded-md border-gray-300 shadow-sm p-2">
+                    <button id="add-subject-btn" class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded-lg">Tambah</button>
+                </div>
+            </div>
+            <div class="text-right mt-6">
+                <button id="close-subjects-modal-btn" class="px-4 py-2 rounded bg-gray-300 hover:bg-gray-400 transition-colors">Tutup</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="edit-subject-modal" class="modal fixed inset-0 bg-black bg-opacity-50 items-center justify-center z-50">
+        <div class="bg-white p-8 rounded-lg shadow-xl w-full max-w-md">
+            <h3 class="text-lg font-bold text-gray-900">Edit Mata Pelajaran</h3>
+            <div class="my-4 space-y-3">
+                 <div>
+                    <label for="edit-subject-input" class="block text-sm font-medium text-gray-700">Nama Baru Mata Pelajaran</label>
+                    <input type="text" id="edit-subject-input" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm p-2 focus:border-indigo-500 focus:ring-indigo-500">
+                </div>
+                 <div>
+                    <label for="edit-subject-kkm" class="block text-sm font-medium text-gray-700">KKM</label>
+                    <input type="number" id="edit-subject-kkm" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm p-2 focus:border-indigo-500 focus:ring-indigo-500">
+                </div>
+            </div>
+            <div class="flex justify-end gap-4 mt-6">
+                <button id="cancel-edit-subject-btn" class="px-4 py-2 rounded bg-gray-300 hover:bg-gray-400">Batal</button>
+                <button id="save-edit-subject-btn" class="px-4 py-2 rounded bg-blue-600 text-white hover:bg-blue-700">Simpan</button>
+            </div>
+        </div>
+    </div>
+    
+    <div id="delete-subject-modal" class="modal fixed inset-0 bg-black bg-opacity-50 items-center justify-center z-50">
+        <div class="bg-white p-8 rounded-lg shadow-xl w-full max-w-sm">
+            <h3 class="text-lg font-bold text-gray-900">Konfirmasi Hapus</h3>
+            <p class="my-4 text-gray-700">Yakin ingin menghapus mata pelajaran <strong id="delete-subject-name" class="text-red-600"></strong>? Semua data nilai terkait akan hilang.</p>
+            <div class="flex justify-end gap-4 mt-6">
+                <button id="cancel-delete-subject-btn" class="px-4 py-2 rounded bg-gray-300 hover:bg-gray-400">Batal</button>
+                <button id="confirm-delete-subject-btn" class="px-4 py-2 rounded bg-red-600 text-white hover:bg-red-700">Hapus</button>
+            </div>
+        </div>
+    </div>
+
+
+    <script>
+        // --- LOGIN SCRIPT ---
+        document.addEventListener('DOMContentLoaded', () => {
+            const loginContainer = document.getElementById('login-container');
+            const appContainer = document.getElementById('app-container');
+            const loginBtn = document.getElementById('login-btn');
+            const usernameInput = document.getElementById('username');
+            const passwordInput = document.getElementById('password');
+            const loginError = document.getElementById('login-error');
+            const resetPasswordLink = document.getElementById('reset-password-link');
+
+            let credentials = { username: 'admin', password: '12345' };
+            const savedStateJSON = localStorage.getItem('nilaiSiswaState');
+            if (savedStateJSON) {
+                const savedState = JSON.parse(savedStateJSON);
+                if (savedState.credentials) {
+                    credentials = savedState.credentials;
+                }
+            }
+
+            const attemptLogin = () => {
+                if (usernameInput.value === credentials.username && passwordInput.value === credentials.password) {
+                    loginContainer.classList.add('hidden');
+                    appContainer.classList.remove('hidden');
+                    loginError.classList.add('hidden');
+                    initializeApp(); // Initialize the main app after successful login
+                } else {
+                    loginError.classList.remove('hidden');
+                }
+            };
+
+            resetPasswordLink.addEventListener('click', (e) => {
+                e.preventDefault();
+                const masterKey = prompt("Masukkan kode pemulihan untuk mereset password:");
+                if (masterKey === 'reset123') {
+                    const currentStateJSON = localStorage.getItem('nilaiSiswaState');
+                    let currentState = currentStateJSON ? JSON.parse(currentStateJSON) : {};
+                    currentState.credentials = { username: 'admin', password: '12345' };
+                    localStorage.setItem('nilaiSiswaState', JSON.stringify(currentState));
+                    alert("Password berhasil direset ke '12345'. Silakan muat ulang halaman dan coba login kembali.");
+                    window.location.reload();
+                } else if (masterKey !== null) {
+                    alert("Kode pemulihan salah!");
+                }
+            });
+
+            loginBtn.addEventListener('click', attemptLogin);
+            passwordInput.addEventListener('keydown', (e) => { if (e.key === 'Enter') attemptLogin(); });
+            usernameInput.addEventListener('keydown', (e) => { if (e.key === 'Enter') attemptLogin(); });
+        });
+
+        // --- MAIN APP SCRIPT ---
+        const initializeApp = () => {
+            const { jsPDF } = window.jspdf;
+
+            // --- STATE MANAGEMENT ---
+            let state = {
+                schoolInfo: { schoolName: '', schoolAddress: '', ksName: '', ksNip: '', teacherName: '', teacherNip: '', tahunAjaran: '' },
+                students: [
+                    { nis: "1001", name: "Budi Santoso", gender: "L", class: "IV-A" },
+                    { nis: "1002", name: "Citra Lestari", gender: "P", class: "IV-B" }
+                ],
+                subjects: [
+                    { name: "Pendidikan Pancasila", kkm: 75 },
+                    { name: "B. Indo", kkm: 70 },
+                    { name: "Matematika", kkm: 65 },
+                    { name: "IPAS", kkm: 70 },
+                    { name: "SBDP", kkm: 75 },
+                    { name: "B. Inggris", kkm: 70 },
+                    { name: "B. Jawa", kkm: 70 },
+                    { name: "Koding", kkm: 80 },
+                ],
+                grades: {
+                    semester1: {},
+                    semester2: {}
+                },
+                config: {
+                    activePage: 'data-sekolah',
+                    activeSubject: "Pendidikan Pancasila",
+                    activeSemester: "semester1"
+                },
+                credentials: {
+                    username: 'admin',
+                    password: '12345'
+                }
+            };
+            let studentIndexToModify = null;
+            let subjectToEdit = null;
+            let subjectToDelete = null;
+
+            const saveState = () => localStorage.setItem('nilaiSiswaState', JSON.stringify(state));
+            const loadState = () => {
+                const savedState = localStorage.getItem('nilaiSiswaState');
+                if (savedState) {
+                    state = JSON.parse(savedState);
+                    if (!state.credentials) {
+                        state.credentials = { username: 'admin', password: '12345' };
+                    }
+                    if (!state.grades.semester1 || !state.grades.semester2) {
+                        initializeGrades();
+                    }
+                } else {
+                    initializeGrades();
+                }
+            };
+            
+            const initializeGrades = () => {
+                state.grades = { semester1: {}, semester2: {} };
+                ['semester1', 'semester2'].forEach(semester => {
+                    state.subjects.forEach(subject => {
+                        state.grades[semester][subject.name] = [];
+                        state.students.forEach(student => {
+                            state.grades[semester][subject.name].push({ 
+                                nis: student.nis, 
+                                name: student.name, 
+                                formative: [0, 0], 
+                                summative: [0, 0], 
+                                pts: 0, 
+                                pas: 0 
+                            });
+                        });
+                    });
+                });
+
+                const ppGrades = state.grades.semester1["Pendidikan Pancasila"];
+                if (ppGrades) {
+                    const budiGrade = ppGrades.find(g => g.nis === "1001");
+                    if (budiGrade) Object.assign(budiGrade, { formative: [85, 90], summative: [80, 85], pts: 88, pas: 90 });
+                    const citraGrade = ppGrades.find(g => g.nis === "1002");
+                    if (citraGrade) Object.assign(citraGrade, { formative: [90, 92], summative: [70, 60], pts: 90, pas: 94 });
+                }
+            };
+
+            // --- NAVIGATION ---
+            const navLinks = document.querySelectorAll('.nav-link');
+            const pages = document.querySelectorAll('.page');
+            const navigate = (pageId) => {
+                state.config.activePage = pageId;
+                pages.forEach(p => p.classList.remove('active'));
+                document.getElementById(`page-${pageId}`).classList.add('active');
+                navLinks.forEach(l => l.classList.remove('active'));
+                document.querySelector(`.nav-link[data-page="${pageId}"]`).classList.add('active');
+                switch(pageId) {
+                    case 'data-sekolah': renderDataSekolah(); break;
+                    case 'data-siswa': renderDataSiswa(); break;
+                    case 'olah-nilai': renderOlahNilai(); break;
+                    case 'rekap-nilai': 
+                        renderRekapNilai(); 
+                        const today = new Date();
+                        document.getElementById('tanggal-cetak').value = today.toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' });
+                        document.getElementById('lokasi-cetak').value = "Semarang";
+                        break;
+                }
+                saveState();
+            };
+
+            // --- RENDER FUNCTIONS ---
+            const renderDataSekolah = () => {
+                for (const key in state.schoolInfo) {
+                    const inputId = key.replace(/([A-Z])/g, '-$1').toLowerCase();
+                    const element = document.getElementById(inputId);
+                    if (element) element.value = state.schoolInfo[key];
+                }
+            };
+            const renderDataSiswa = () => {
+                const table = document.getElementById('student-list-table');
+                table.innerHTML = '';
+                const thead = document.createElement('thead');
+                thead.className = 'text-xs text-gray-800 uppercase bg-gray-200';
+                thead.innerHTML = `<tr>
+                    <th class="p-3">No.</th>
+                    <th class="p-3">NIS</th>
+                    <th class="p-3">Nama Siswa</th>
+                    <th class="p-3">Kelas</th>
+                    <th class="p-3">L/P</th>
+                    <th class="p-3">Aksi</th>
+                </tr>`;
+                table.appendChild(thead);
+
+                const tbody = document.createElement('tbody');
+                if (state.students.length === 0) {
+                    tbody.innerHTML = `<tr><td colspan="6" class="text-center p-4 text-gray-500">Belum ada data siswa.</td></tr>`;
+                } else {
+                    state.students.forEach((student, index) => {
+                        const tr = document.createElement('tr');
+                        tr.className = 'border-b hover:bg-gray-50';
+                        tr.innerHTML = `
+                            <td class="p-3 font-medium">${index + 1}</td>
+                            <td class="p-3">${student.nis}</td>
+                            <td class="p-3">${student.name}</td>
+                            <td class="p-3">${student.class}</td>
+                            <td class="p-3">${student.gender}</td>
+                            <td class="p-3">
+                                <button class="edit-student-btn text-blue-500 hover:text-blue-700 mr-3" data-index="${index}"><i class="fas fa-pencil-alt"></i></button>
+                                <button class="delete-student-btn text-red-500 hover:text-red-700" data-index="${index}"><i class="fas fa-trash-alt"></i></button>
+                            </td>
+                        `;
+                        tbody.appendChild(tr);
+                    });
+                }
+                table.appendChild(tbody);
+            };
+            const renderOlahNilai = () => {
+                document.querySelectorAll('#page-olah-nilai .semester-tab').forEach(tab => {
+                    tab.classList.toggle('active', tab.dataset.semester === state.config.activeSemester);
+                });
+                const subjectSelector = document.getElementById('subject-selector');
+                const kkmInput = document.getElementById('kkm-input');
+                subjectSelector.innerHTML = state.subjects.map(s => `<option value="${s.name}" ${s.name === state.config.activeSubject ? 'selected' : ''}>${s.name}</option>`).join('');
+                
+                const activeSubjectObj = state.subjects.find(s => s.name === state.config.activeSubject);
+                if(activeSubjectObj) {
+                    kkmInput.value = activeSubjectObj.kkm;
+                } else {
+                    kkmInput.value = '';
+                }
+
+                renderGradesTable();
+            };
+            const renderGradesTable = () => {
+                const table = document.getElementById('grades-table');
+                const thead = table.querySelector('thead');
+                const tbody = table.querySelector('tbody');
+                
+                const data = state.grades[state.config.activeSemester][state.config.activeSubject] || [];
+                const activeSubjectObj = state.subjects.find(s => s.name === state.config.activeSubject);
+                const kkm = activeSubjectObj ? activeSubjectObj.kkm : 0;
+                
+                thead.innerHTML = '';
+                tbody.innerHTML = '';
+
+                if (data.length === 0) {
+                    tbody.innerHTML = `<tr><td colspan="100%" class="p-4 text-center text-gray-500">Tidak ada data siswa atau mata pelajaran.</td></tr>`;
+                    return;
+                }
+                
+                const headerRow = document.createElement('tr');
+                let headers = [{text: 'No.', class: 'bg-gray-200'}, {text: 'Nama Siswa', class: 'bg-gray-200'}];
+                const maxFormative = Math.max(1, ...data.map(s => s.formative.length > 0 ? s.formative.length : 1));
+                for (let i = 1; i <= maxFormative; i++) headers.push({text: `AF ${i}`, class: 'bg-blue-100'});
+                const maxSummative = Math.max(1, ...data.map(s => s.summative.length > 0 ? s.summative.length : 1));
+                for (let i = 1; i <= maxSummative; i++) headers.push({text: `PH ${i}`, class: 'bg-yellow-100'});
+                headers.push({text: 'PTS', class: 'bg-green-100'}, {text: 'PAS', class: 'bg-pink-100'}, {text: 'Nilai Akhir', class: 'bg-gray-200'});
+                
+                headerRow.innerHTML = headers.map(h => `<th scope="col" class="p-3 ${h.class}">${h.text}</th>`).join('');
+                thead.appendChild(headerRow);
+                
+                data.forEach((student, index) => {
+                    const row = document.createElement('tr');
+                    row.className = 'border-b hover:bg-gray-50';
+                    row.dataset.nis = student.nis;
+                    const finalScore = calculateNA(student);
+                    const scoreClass = parseFloat(finalScore) < kkm ? 'nilai-merah' : 'text-blue-600';
+                    let cells = `<td class="p-3 font-medium">${index + 1}</td><td class="p-3">${student.name}</td>`;
+                    for (let i = 0; i < maxFormative; i++) {
+                        const score = student.formative[i] || 0;
+                        const formativeClass = score < kkm ? 'nilai-merah' : '';
+                        cells += `<td class="p-3 editable bg-blue-100 hover:bg-blue-200 ${formativeClass}" contenteditable="true" data-field="formative" data-sub-index="${i}">${student.formative[i] || ''}</td>`;
+                    }
+                    for (let i = 0; i < maxSummative; i++) {
+                        const score = student.summative[i] || 0;
+                        const summativeClass = score < kkm ? 'nilai-merah' : '';
+                        cells += `<td class="p-3 editable bg-yellow-100 hover:bg-yellow-200 ${summativeClass}" contenteditable="true" data-field="summative" data-sub-index="${i}">${student.summative[i] || ''}</td>`;
+                    }
+                    const ptsScore = student.pts || 0;
+                    const ptsClass = ptsScore < kkm ? 'nilai-merah' : '';
+                    cells += `<td class="p-3 editable bg-green-100 hover:bg-green-200 ${ptsClass}" contenteditable="true" data-field="pts">${student.pts || ''}</td>`;
+                    
+                    const pasScore = student.pas || 0;
+                    const pasClass = pasScore < kkm ? 'nilai-merah' : '';
+                    cells += `<td class="p-3 editable bg-pink-100 hover:bg-pink-200 ${pasClass}" contenteditable="true" data-field="pas">${student.pas || ''}</td>`;
+                    
+                    cells += `<td class="p-3 font-bold ${scoreClass}">${finalScore}</td>`;
+                    row.innerHTML = cells;
+                    tbody.appendChild(row);
+                });
+            };
+            const renderRekapNilai = () => {
+                document.querySelectorAll('#page-rekap-nilai .semester-tab').forEach(tab => {
+                    tab.classList.toggle('active', tab.dataset.semester === state.config.activeSemester);
+                });
+                const table = document.getElementById('recap-table');
+                table.innerHTML = '';
+                if (state.students.length === 0) {
+                     table.innerHTML = `<tbody><tr><td colspan="5" class="text-center p-4 text-gray-500">Tidak ada data siswa.</td></tr></tbody>`;
+                    return;
+                }
+                const thead = document.createElement('thead');
+                thead.className = 'text-xs text-gray-800 uppercase bg-gray-200';
+                let headers = ['No.', 'Nama Siswa', ...state.subjects.map(s => s.name), 'Rata-Rata Akhir'];
+                thead.innerHTML = `<tr>${headers.map(h => `<th class="p-3">${h}</th>`).join('')}</tr>`;
+                table.appendChild(thead);
+                const tbody = document.createElement('tbody');
+                tbody.className = 'bg-white';
+                state.students.forEach((student, index) => {
+                    const row = document.createElement('tr');
+                    row.className = 'border-b hover:bg-gray-50';
+                    let cells = `<td class="p-3 font-medium">${index + 1}</td><td class="p-3 font-semibold">${student.name}</td>`;
+                    let totalScore = 0, subjectCount = 0;
+                    state.subjects.forEach(subject => {
+                        const studentGrade = state.grades[state.config.activeSemester][subject.name] ? state.grades[state.config.activeSemester][subject.name].find(s => s.nis === student.nis) : null;
+                        const finalScore = studentGrade ? parseFloat(calculateNA(studentGrade)) : 0;
+                        const scoreClass = finalScore < subject.kkm ? 'nilai-merah' : '';
+                        cells += `<td class="p-3 ${scoreClass}">${finalScore.toFixed(2)}</td>`;
+                        if (studentGrade) { totalScore += finalScore; subjectCount++; }
+                    });
+                    const finalAverage = subjectCount > 0 ? (totalScore / subjectCount).toFixed(2) : '0.00';
+                    cells += `<td class="p-3 font-bold text-blue-700">${finalAverage}</td>`;
+                    row.innerHTML = cells;
+                    tbody.appendChild(row);
+                });
+                table.appendChild(tbody);
+            };
+            const renderSubjectsModal = () => {
+                const list = document.getElementById('subjects-list');
+                list.innerHTML = '';
+                state.subjects.forEach(subject => {
+                    const li = document.createElement('li');
+                    li.className = 'flex items-center justify-between bg-gray-50 p-2 rounded';
+                    li.innerHTML = `
+                        <span>${subject.name} (KKM: ${subject.kkm})</span>
+                        <div>
+                            <button class="edit-subject-btn text-blue-500 hover:text-blue-700 mr-3" data-subject="${subject.name}"><i class="fas fa-pencil-alt"></i></button>
+                            <button class="delete-subject-btn text-red-500 hover:text-red-700" data-subject="${subject.name}"><i class="fas fa-trash-alt"></i></button>
+                        </div>
+                    `;
+                    list.appendChild(li);
+                });
+            };
+
+            // --- CALCULATIONS ---
+            const calculateAverage = (arr) => (!arr || arr.length === 0) ? 0 : arr.reduce((acc, val) => acc + (parseFloat(val) || 0), 0) / arr.length;
+            const calculateNA = (student) => {
+                const avgFormative = calculateAverage(student.formative);
+                const avgSummative = calculateAverage(student.summative);
+                const pts = parseFloat(student.pts) || 0;
+                const pas = parseFloat(student.pas) || 0;
+                const finalScore = (avgFormative + avgSummative + pts + pas) / 4;
+                return finalScore.toFixed(2);
+            };
+
+            // --- CORE LOGIC ---
+            const addStudent = (studentData) => {
+                const { nis, name, gender, studentClass } = studentData;
+                if (nis && name && studentClass && !state.students.some(s => s.nis === nis)) {
+                    state.students.push({ nis, name, gender, class: studentClass });
+                    ['semester1', 'semester2'].forEach(semester => {
+                        state.subjects.forEach(subject => {
+                            if (!state.grades[semester][subject.name]) state.grades[semester][subject.name] = [];
+                            const defaultFormative = state.grades[semester][subject.name].length > 0 ? state.grades[semester][subject.name][0].formative.map(() => 0) : [0];
+                            const defaultSummative = state.grades[semester][subject.name].length > 0 ? state.grades[semester][subject.name][0].summative.map(() => 0) : [0];
+                            state.grades[semester][subject.name].push({ nis, name, formative: defaultFormative, summative: defaultSummative, pts: 0, pas: 0 });
+                        });
+                    });
+                    return true;
+                } else if (state.students.some(s => s.nis === nis)) {
+                     alert(`Siswa dengan NIS "${nis}" sudah ada.`);
+                } else {
+                    alert('NIS, Nama, dan Kelas tidak boleh kosong.');
+                }
+                return false;
+            };
+            
+            const generatePdf = (action) => {
+                const doc = new jsPDF();
+                const schoolInfo = state.schoolInfo;
+                const lokasiCetak = document.getElementById('lokasi-cetak').value || 'Semarang';
+                const tanggalCetak = document.getElementById('tanggal-cetak').value || new Date().toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' });
+                const semesterText = state.config.activeSemester === 'semester1' ? 'SEMESTER 1' : 'SEMESTER 2';
+
+                // Header
+                doc.setFontSize(14);
+                doc.setFont('helvetica', 'bold');
+                doc.text(`REKAPITULASI NILAI AKHIR SISWA - ${semesterText}`, doc.internal.pageSize.getWidth() / 2, 15, { align: 'center' });
+                doc.setFontSize(12);
+                doc.text(schoolInfo.schoolName.toUpperCase(), doc.internal.pageSize.getWidth() / 2, 22, { align: 'center' });
+                doc.setFont('helvetica', 'normal');
+                doc.setFontSize(10);
+                doc.text(schoolInfo.schoolAddress, doc.internal.pageSize.getWidth() / 2, 28, { align: 'center' });
+                doc.setFont('helvetica', 'bold');
+                doc.text(`TAHUN AJARAN ${schoolInfo.tahunAjaran || ''}`, doc.internal.pageSize.getWidth() / 2, 34, { align: 'center' });
+                
+                // Auto Table
+                doc.autoTable({
+                    html: '#recap-table',
+                    startY: 40,
+                    theme: 'grid',
+                    headStyles: { fillColor: [22, 160, 133], textColor: [255, 255, 255] },
+                    styles: { fontSize: 8 },
+                    didParseCell: function (data) {
+                        if (data.cell.text[0] && data.cell.text[0].classList && data.cell.text[0].classList.contains('nilai-merah')) {
+                            data.cell.styles.textColor = [255, 0, 0];
+                        }
+                    }
+                });
+
+                // Signature
+                const finalY = doc.autoTable.previous.finalY;
+                doc.setFontSize(10);
+                doc.text(`${lokasiCetak}, ${tanggalCetak}`, doc.internal.pageSize.getWidth() - 20, finalY + 20, { align: 'right' });
+                doc.text('Guru Kelas,', doc.internal.pageSize.getWidth() - 20, finalY + 25, { align: 'right' });
+                
+                doc.text(schoolInfo.teacherName || '(___________________)', doc.internal.pageSize.getWidth() - 20, finalY + 45, { align: 'right' });
+                doc.text(`NIP. ${schoolInfo.teacherNip || ' '}`, doc.internal.pageSize.getWidth() - 20, finalY + 50, { align: 'right' });
+
+
+                if (action === 'preview') {
+                    doc.output('dataurlnewwindow');
+                } else {
+                    doc.save(`rekap-nilai-${state.config.activeSemester}.pdf`);
+                }
+            };
+
+            const generateXlsx = () => {
+                const schoolInfo = state.schoolInfo;
+                const lokasiCetak = document.getElementById('lokasi-cetak').value || 'Semarang';
+                const tanggalCetak = document.getElementById('tanggal-cetak').value || new Date().toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' });
+                const semesterText = state.config.activeSemester === 'semester1' ? 'SEMESTER 1' : 'SEMESTER 2';
+
+                // Prepare data array
+                let dataForExcel = [];
+
+                // Headers
+                const header1 = [`REKAPITULASI NILAI AKHIR SISWA - ${semesterText}`];
+                const header2 = [schoolInfo.schoolName.toUpperCase()];
+                const header3 = [schoolInfo.schoolAddress];
+                const header4 = [`TAHUN AJARAN ${schoolInfo.tahunAjaran || ''}`];
+                dataForExcel.push(header1, header2, header3, header4, []); // Add empty row
+
+                // Table headers
+                const tableHeaders = ['No.', 'Nama Siswa', ...state.subjects.map(s => s.name), 'Rata-Rata Akhir'];
+                dataForExcel.push(tableHeaders);
+
+                // Table body
+                state.students.forEach((student, index) => {
+                    let row = [index + 1, student.name];
+                    let totalScore = 0, subjectCount = 0;
+                    state.subjects.forEach(subject => {
+                        const studentGrade = state.grades[state.config.activeSemester][subject.name] ? state.grades[state.config.activeSemester][subject.name].find(s => s.nis === student.nis) : null;
+                        const finalScore = studentGrade ? parseFloat(calculateNA(studentGrade)) : 0;
+                        row.push(finalScore.toFixed(2));
+                        if (studentGrade) { totalScore += finalScore; subjectCount++; }
+                    });
+                    const finalAverage = subjectCount > 0 ? (totalScore / subjectCount).toFixed(2) : '0.00';
+                    row.push(finalAverage);
+                    dataForExcel.push(row);
+                });
+
+                // Signature
+                dataForExcel.push([], []); // Empty rows
+                const signature = [];
+                for (let i = 0; i < tableHeaders.length - 1; i++) {
+                    signature.push(''); // empty cells for alignment
+                }
+                signature.push(`${lokasiCetak}, ${tanggalCetak}`);
+                dataForExcel.push(signature);
+
+                const signature2 = [];
+                for (let i = 0; i < tableHeaders.length - 1; i++) {
+                    signature2.push('');
+                }
+                signature2.push('Guru Kelas,');
+                dataForExcel.push(signature2);
+
+                dataForExcel.push([], [], []); // More empty rows
+
+                const signature3 = [];
+                for (let i = 0; i < tableHeaders.length - 1; i++) {
+                    signature3.push('');
+                }
+                signature3.push(schoolInfo.teacherName || '(___________________)');
+                dataForExcel.push(signature3);
+
+                const signature4 = [];
+                for (let i = 0; i < tableHeaders.length - 1; i++) {
+                    signature4.push('');
+                }
+                signature4.push(`NIP. ${schoolInfo.teacherNip || ' '}`);
+                dataForExcel.push(signature4);
+
+
+                const ws = XLSX.utils.aoa_to_sheet(dataForExcel);
+                
+                // Merging cells for headers
+                ws['!merges'] = [
+                    { s: { r: 0, c: 0 }, e: { r: 0, c: tableHeaders.length - 1 } },
+                    { s: { r: 1, c: 0 }, e: { r: 1, c: tableHeaders.length - 1 } },
+                    { s: { r: 2, c: 0 }, e: { r: 2, c: tableHeaders.length - 1 } },
+                    { s: { r: 3, c: 0 }, e: { r: 3, c: tableHeaders.length - 1 } }
+                ];
+
+                // Set column widths
+                const colWidths = [{ wch: 5 }, { wch: 30 }]; // No. and Nama Siswa
+                state.subjects.forEach(s => colWidths.push({ wch: s.name.length + 2 }));
+                colWidths.push({ wch: 15 }); // Rata-rata
+                ws['!cols'] = colWidths;
+
+
+                const wb = XLSX.utils.book_new();
+                XLSX.utils.book_append_sheet(wb, ws, 'Rekap Nilai');
+                XLSX.writeFile(wb, `rekap-nilai-${state.config.activeSemester}.xlsx`);
+            };
+
+
+            // --- EVENT HANDLERS ---
+            navLinks.forEach(link => link.addEventListener('click', (e) => { e.preventDefault(); navigate(e.currentTarget.dataset.page); }));
+            document.getElementById('save-school-data').addEventListener('click', () => {
+                for (const key in state.schoolInfo) {
+                    const inputId = key.replace(/([A-Z])/g, '-$1').toLowerCase();
+                    state.schoolInfo[key] = document.getElementById(inputId).value;
+                }
+                alert('Data sekolah berhasil disimpan!');
+                saveState();
+            });
+            document.getElementById('add-student-btn').addEventListener('click', () => {
+                const nisInput = document.getElementById('new-student-nis');
+                const nameInput = document.getElementById('new-student-name');
+                const classInput = document.getElementById('new-student-class');
+                const genderInput = document.querySelector('input[name="new-student-gender"]:checked');
+                const studentData = {
+                    nis: nisInput.value.trim(),
+                    name: nameInput.value.trim(),
+                    gender: genderInput.value,
+                    studentClass: classInput.value.trim()
+                };
+                if (addStudent(studentData)) {
+                    nisInput.value = '';
+                    nameInput.value = '';
+                    classInput.value = '';
+                    renderDataSiswa();
+                    saveState();
+                }
+            });
+            
+            // --- Modal Siswa ---
+            const deleteModal = document.getElementById('delete-modal');
+            const editModal = document.getElementById('edit-modal');
+            document.getElementById('student-list-table').addEventListener('click', (e) => {
+                const target = e.target.closest('button');
+                if (!target) return;
+                studentIndexToModify = parseInt(target.dataset.index);
+                const student = state.students[studentIndexToModify];
+                if (target.classList.contains('delete-student-btn')) {
+                    document.getElementById('delete-student-name').textContent = student.name;
+                    deleteModal.classList.add('active');
+                } else if (target.classList.contains('edit-student-btn')) {
+                    document.getElementById('edit-student-nis').value = student.nis;
+                    document.getElementById('edit-student-name').value = student.name;
+                    document.getElementById('edit-student-class').value = student.class;
+                    document.querySelector(`input[name="edit-student-gender"][value="${student.gender}"]`).checked = true;
+                    editModal.classList.add('active');
+                    document.getElementById('edit-student-name').focus();
+                }
+            });
+            document.getElementById('confirm-delete-btn').addEventListener('click', () => {
+                const student = state.students[studentIndexToModify];
+                state.students.splice(studentIndexToModify, 1);
+                ['semester1', 'semester2'].forEach(semester => {
+                    state.subjects.forEach(subject => {
+                        if (state.grades[semester][subject.name]) {
+                            state.grades[semester][subject.name] = state.grades[semester][subject.name].filter(s => s.nis !== student.nis);
+                        }
+                    });
+                });
+                renderDataSiswa();
+                saveState();
+                deleteModal.classList.remove('active');
+                studentIndexToModify = null;
+            });
+            document.getElementById('cancel-delete-btn').addEventListener('click', () => deleteModal.classList.remove('active'));
+            document.getElementById('save-edit-btn').addEventListener('click', () => {
+                const newName = document.getElementById('edit-student-name').value.trim();
+                const newClass = document.getElementById('edit-student-class').value.trim();
+                const newGender = document.querySelector('input[name="edit-student-gender"]:checked').value;
+                if (newName && newClass) {
+                    const student = state.students[studentIndexToModify];
+                    student.name = newName;
+                    student.class = newClass;
+                    student.gender = newGender;
+                    ['semester1', 'semester2'].forEach(semester => {
+                        state.subjects.forEach(subject => {
+                           if (state.grades[semester][subject.name]) {
+                               const studentGrade = state.grades[semester][subject.name].find(s => s.nis === student.nis);
+                               if(studentGrade) studentGrade.name = newName;
+                           }
+                        });
+                    });
+                    renderDataSiswa();
+                    saveState();
+                    editModal.classList.remove('active');
+                    studentIndexToModify = null;
+                } else alert('Nama dan Kelas siswa tidak boleh kosong.');
+            });
+            document.getElementById('cancel-edit-btn').addEventListener('click', () => editModal.classList.remove('active'));
+
+            // --- Modal Mata Pelajaran ---
+            const subjectsModal = document.getElementById('subjects-modal');
+            const editSubjectModal = document.getElementById('edit-subject-modal');
+            const deleteSubjectModal = document.getElementById('delete-subject-modal');
+
+            document.getElementById('edit-subjects-btn').addEventListener('click', () => {
+                renderSubjectsModal();
+                subjectsModal.classList.add('active');
+            });
+            document.getElementById('close-subjects-modal-btn').addEventListener('click', () => subjectsModal.classList.remove('active'));
+            document.getElementById('add-subject-btn').addEventListener('click', () => {
+                const inputName = document.getElementById('new-subject-name');
+                const inputKkm = document.getElementById('new-subject-kkm');
+                const newSubjectName = inputName.value.trim();
+                const newSubjectKkm = parseInt(inputKkm.value) || 0;
+                if (newSubjectName && !state.subjects.some(s => s.name === newSubjectName)) {
+                    state.subjects.push({ name: newSubjectName, kkm: newSubjectKkm });
+                    ['semester1', 'semester2'].forEach(semester => {
+                        state.grades[semester][newSubjectName] = [];
+                        state.students.forEach(student => {
+                            state.grades[semester][newSubjectName].push({ nis: student.nis, name: student.name, formative: [0], summative: [0], pts: 0, pas: 0 });
+                        });
+                    });
+                    inputName.value = '';
+                    inputKkm.value = '';
+                    renderSubjectsModal();
+                    renderOlahNilai();
+                    saveState();
+                } else alert('Mata pelajaran tidak boleh kosong atau sudah ada.');
+            });
+            document.getElementById('subjects-list').addEventListener('click', (e) => {
+                const target = e.target.closest('button');
+                if (!target) return;
+                const subjectName = target.dataset.subject;
+
+                if (target.classList.contains('delete-subject-btn')) {
+                    subjectToDelete = subjectName;
+                    document.getElementById('delete-subject-name').textContent = subjectName;
+                    deleteSubjectModal.classList.add('active');
+                } else if (target.classList.contains('edit-subject-btn')) {
+                    subjectToEdit = state.subjects.find(s => s.name === subjectName);
+                    if (subjectToEdit) {
+                        document.getElementById('edit-subject-input').value = subjectToEdit.name;
+                        document.getElementById('edit-subject-kkm').value = subjectToEdit.kkm;
+                        editSubjectModal.classList.add('active');
+                        document.getElementById('edit-subject-input').focus();
+                    }
+                }
+            });
+            document.getElementById('cancel-edit-subject-btn').addEventListener('click', () => editSubjectModal.classList.remove('active'));
+            document.getElementById('save-edit-subject-btn').addEventListener('click', () => {
+                const newName = document.getElementById('edit-subject-input').value.trim();
+                const newKkm = parseInt(document.getElementById('edit-subject-kkm').value) || 0;
+                const isNameUnique = !state.subjects.some(s => s.name === newName && s.name !== subjectToEdit.name);
+
+                if (newName && isNameUnique) {
+                    const oldName = subjectToEdit.name;
+                    subjectToEdit.name = newName;
+                    subjectToEdit.kkm = newKkm;
+                    
+                    if (oldName !== newName) {
+                        ['semester1', 'semester2'].forEach(semester => {
+                            state.grades[semester][newName] = state.grades[semester][oldName];
+                            delete state.grades[semester][oldName];
+                        });
+                    }
+
+                    if (state.config.activeSubject === oldName) {
+                        state.config.activeSubject = newName;
+                    }
+                    
+                    renderSubjectsModal();
+                    renderOlahNilai();
+                    saveState();
+                    editSubjectModal.classList.remove('active');
+                    subjectToEdit = null;
+                } else {
+                    alert('Nama mata pelajaran tidak boleh kosong atau sudah ada.');
+                }
+            });
+            document.getElementById('confirm-delete-subject-btn').addEventListener('click', () => {
+                state.subjects = state.subjects.filter(s => s.name !== subjectToDelete);
+                ['semester1', 'semester2'].forEach(semester => {
+                    delete state.grades[semester][subjectToDelete];
+                });
+                if (state.config.activeSubject === subjectToDelete) {
+                    state.config.activeSubject = state.subjects.length > 0 ? state.subjects[0].name : null;
+                }
+                renderSubjectsModal();
+                renderOlahNilai();
+                saveState();
+                deleteSubjectModal.classList.remove('active');
+                subjectToDelete = null;
+            });
+            document.getElementById('cancel-delete-subject-btn').addEventListener('click', () => deleteSubjectModal.classList.remove('active'));
+
+            // --- Semester Tab Handlers ---
+            document.querySelectorAll('.semester-tab').forEach(tab => {
+                tab.addEventListener('click', (e) => {
+                    const newSemester = e.target.dataset.semester;
+                    state.config.activeSemester = newSemester;
+                    if (state.config.activePage === 'olah-nilai') {
+                        renderOlahNilai();
+                    } else if (state.config.activePage === 'rekap-nilai') {
+                        renderRekapNilai();
+                    }
+                    saveState();
+                });
+            });
+
+            // --- Handler Lain ---
+            document.getElementById('upload-excel').addEventListener('change', (e) => {
+                const file = e.target.files[0];
+                const reader = new FileReader();
+                reader.onload = (event) => {
+                    const data = new Uint8Array(event.target.result);
+                    const workbook = XLSX.read(data, {type: 'array'});
+                    const firstSheetName = workbook.SheetNames[0];
+                    const worksheet = workbook.Sheets[firstSheetName];
+                    const json = XLSX.utils.sheet_to_json(worksheet, {header: 1});
+                    let count = 0;
+                    json.forEach((row, rowIndex) => {
+                        if (rowIndex >= 0 && row[0] && row[1] && row[2] && row[3]) {
+                            const studentData = {
+                                nis: row[0].toString().trim(),
+                                name: row[1].toString().trim(),
+                                studentClass: row[2].toString().trim(),
+                                gender: row[3].toString().trim().toUpperCase()
+                            };
+                            if (addStudent(studentData)) count++;
+                        }
+                    });
+                    renderDataSiswa();
+                    saveState();
+                    alert(`${count} siswa baru berhasil ditambahkan dari file.`);
+                };
+                reader.readAsArrayBuffer(file);
+                e.target.value = '';
+            });
+            document.getElementById('subject-selector').addEventListener('change', (e) => {
+                state.config.activeSubject = e.target.value;
+                renderOlahNilai();
+                saveState();
+            });
+            document.getElementById('kkm-input').addEventListener('change', (e) => {
+                const activeSubjectObj = state.subjects.find(s => s.name === state.config.activeSubject);
+                if (activeSubjectObj) {
+                    activeSubjectObj.kkm = parseInt(e.target.value) || 0;
+                    renderGradesTable();
+                    saveState();
+                }
+            });
+            document.getElementById('add-formative-btn').addEventListener('click', () => {
+                const grades = state.grades[state.config.activeSemester][state.config.activeSubject];
+                if (grades) {
+                    grades.forEach(s => s.formative.push(0));
+                    renderGradesTable();
+                    saveState();
+                }
+            });
+            document.getElementById('add-summative-btn').addEventListener('click', () => {
+                 const grades = state.grades[state.config.activeSemester][state.config.activeSubject];
+                 if (grades) {
+                    grades.forEach(s => s.summative.push(0));
+                    renderGradesTable();
+                    saveState();
+                }
+            });
+            document.getElementById('delete-formative-btn').addEventListener('click', () => {
+                const grades = state.grades[state.config.activeSemester][state.config.activeSubject];
+                if (grades && grades.length > 0 && grades[0].formative.length > 1) {
+                    grades.forEach(s => s.formative.pop());
+                    renderGradesTable();
+                    saveState();
+                } else {
+                    alert('Tidak dapat menghapus kolom AF terakhir.');
+                }
+            });
+            document.getElementById('delete-summative-btn').addEventListener('click', () => {
+                const grades = state.grades[state.config.activeSemester][state.config.activeSubject];
+                if (grades && grades.length > 0 && grades[0].summative.length > 1) {
+                    grades.forEach(s => s.summative.pop());
+                    renderGradesTable();
+                    saveState();
+                } else {
+                    alert('Tidak dapat menghapus kolom PH terakhir.');
+                }
+            });
+            document.getElementById('grades-table').addEventListener('focusout', (e) => {
+                if (e.target.classList.contains('editable')) {
+                    const cell = e.target;
+                    const studentNis = cell.parentElement.dataset.nis;
+                    const field = cell.dataset.field;
+                    const subIndex = cell.dataset.subIndex;
+                    const newValue = cell.textContent;
+                    const student = state.grades[state.config.activeSemester][state.config.activeSubject].find(s => s.nis === studentNis);
+                    if (!student) return;
+                    
+                    const activeSubjectObj = state.subjects.find(s => s.name === state.config.activeSubject);
+                    const kkm = activeSubjectObj ? activeSubjectObj.kkm : 0;
+
+                    if (field === 'pts' || field === 'pas') {
+                        student[field] = parseFloat(newValue) || 0;
+                    } else if (field === 'formative' || field === 'summative') {
+                        student[field][subIndex] = parseFloat(newValue) || 0;
+                    }
+
+                    // Update color of the edited cell
+                    cell.classList.toggle('nilai-merah', (parseFloat(newValue) || 0) < kkm);
+                    
+                    // Update final score and its color
+                    const finalScore = calculateNA(student);
+                    const scoreCell = cell.parentElement.querySelector('td:last-child');
+                    scoreCell.textContent = finalScore;
+                    scoreCell.className = `p-3 font-bold ${parseFloat(finalScore) < kkm ? 'nilai-merah' : 'text-blue-600'}`;
+                    saveState();
+                }
+            });
+            document.getElementById('grades-table').addEventListener('keydown', (e) => {
+                if (e.key === 'Enter' && e.target.classList.contains('editable')) {
+                    e.preventDefault();
+                    e.target.blur();
+                }
+            });
+            
+            // PDF & XLSX Handlers
+            document.getElementById('preview-pdf-btn').addEventListener('click', () => generatePdf('preview'));
+            document.getElementById('download-pdf-btn').addEventListener('click', () => generatePdf('download'));
+            document.getElementById('download-excel-btn').addEventListener('click', generateXlsx);
+
+            // Settings Handler
+            document.getElementById('save-settings-btn').addEventListener('click', () => {
+                const currentPassword = document.getElementById('current-password').value;
+                const newUsername = document.getElementById('new-username').value.trim();
+                const newPassword = document.getElementById('new-password').value;
+                const messageEl = document.getElementById('settings-message');
+
+                if (currentPassword !== state.credentials.password) {
+                    messageEl.textContent = 'Password saat ini salah!';
+                    messageEl.className = 'text-sm text-center text-red-500';
+                    return;
+                }
+
+                if (newUsername) {
+                    state.credentials.username = newUsername;
+                }
+                if (newPassword) {
+                    state.credentials.password = newPassword;
+                }
+                
+                saveState();
+                messageEl.textContent = 'Pengaturan berhasil disimpan!';
+                messageEl.className = 'text-sm text-center text-green-500';
+
+                // Clear fields
+                document.getElementById('current-password').value = '';
+                document.getElementById('new-username').value = '';
+                document.getElementById('new-password').value = '';
+
+                setTimeout(() => { messageEl.textContent = '' }, 3000);
+            });
+
+            // Logout Handler
+            document.getElementById('logout-btn').addEventListener('click', () => {
+                window.location.reload();
+            });
+
+            // Initial Load
+            loadState();
+            navigate(state.config.activePage);
+        };
+    </script>
+</body>
+</html>
